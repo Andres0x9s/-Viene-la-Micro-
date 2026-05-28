@@ -2,16 +2,27 @@
 
 include("conexion.php");
 
+header('Content-Type: application/json');
+
 $sql = "
-SELECT TOP 1 *
+SELECT id_bus, lat, lng
 FROM ubicaciones
-ORDER BY id DESC
 ";
 
 $stmt = sqlsrv_query($conn, $sql);
 
-$data = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+$buses = [];
 
-echo json_encode($data);
+while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)){
+
+    $buses[] = array(
+        "id_bus" => $row["id_bus"],
+        "lat" => $row["lat"],
+        "lng" => $row["lng"]
+    );
+
+}
+
+echo json_encode($buses);
 
 ?>
