@@ -3,9 +3,9 @@
 $serverName = "emprendedores-sql-server.database.windows.net";
 
 $connectionOptions = array(
-    "Database" => "EmprendedoresDB",
-    "Uid" => "adminuser",
-    "PWD" => "pepo123@",
+    "Database" => ".\\SQLEXPRESS",
+    "Uid" => "sa",
+    "PWD" => "12345",
     "Encrypt" => true,
     "TrustServerCertificate" => false
 );
