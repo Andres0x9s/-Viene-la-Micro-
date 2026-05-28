@@ -1,3 +1,12 @@
+
+<?php
+
+session_start();
+
+$id_bus = $_SESSION["id_bus"];
+
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,9 +15,11 @@
 </head>
 <body>
 
-<h2>Rastreando bus...</h2>
+<h2>Rastreando Bus <?php echo $id_bus; ?></h2>
 
 <script>
+
+const id_bus = <?php echo $id_bus; ?>;
 
 function enviar(lat, lng){
 
@@ -17,7 +28,7 @@ function enviar(lat, lng){
         headers:{
             "Content-Type":"application/x-www-form-urlencoded"
         },
-        body:`lat=${lat}&lng=${lng}`
+        body:`id_bus=${id_bus}&lat=${lat}&lng=${lng}`
     });
 
 }
@@ -27,17 +38,12 @@ navigator.geolocation.watchPosition((posicion)=>{
     let lat = posicion.coords.latitude;
     let lng = posicion.coords.longitude;
 
-    console.log(lat, lng);
-
     enviar(lat, lng);
 
-}, (error)=>{
-    console.log(error);
-}, {
-    enableHighAccuracy:true
 });
 
 </script>
 
 </body>
 </html>
+

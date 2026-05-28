@@ -1,18 +1,14 @@
-
 <?php
-
-session_start();
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-if(!isset($_SESSION["id_bus"])){
+// Recibir id del bus desde la URL
+$id_bus = $_GET["id_bus"] ?? null;
 
-    die("No hay sesión iniciada");
-
+if(!$id_bus){
+    die("No se recibió id_bus");
 }
-
-$id_bus = $_SESSION["id_bus"];
 
 ?>
 
@@ -26,10 +22,7 @@ $id_bus = $_SESSION["id_bus"];
 
 <h1>GPS FUNCIONANDO</h1>
 
-<h2>
-Bus:
-<?php echo $id_bus; ?>
-</h2>
+<h2>Bus: <?php echo $id_bus; ?></h2>
 
 <script>
 
@@ -37,31 +30,58 @@ const id_bus = <?php echo $id_bus; ?>;
 
 function enviar(lat, lng){
 
+    console.log("ENVIANDO:", lat, lng);
+
     fetch("guardar.php", {
 
-        method:"POST",
+        method: "POST",
 
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
         },
 
-        body:`id_bus=${id_bus}&lat=${lat}&lng=${lng}`
+        body: `id_bus=${id_bus}&lat=${lat}&lng=${lng}`
 
-    });
+    })
+    .then(res => res.text())
+    .then(data => console.log("RESPUESTA PHP:", data))
+    .catch(err => console.log("ERROR FETCH:", err));
 
 }
 
-navigator.geolocation.watchPosition((posicion)=>{
+// GPS en tiempo real
+if ("geolocation" in navigator) {
 
-    let lat = posicion.coords.latitude;
-    let lng = posicion.coords.longitude;
+    navigator.geolocation.watchPosition(
 
-    enviar(lat, lng);
+        (posicion) => {
 
-});
+            let lat = posicion.coords.latitude;
+            let lng = posicion.coords.longitude;
+
+            console.log("GPS OK:", lat, lng);
+
+            enviar(lat, lng);
+
+        },
+
+        (error) => {
+            console.log("ERROR GPS:", error);
+        },
+
+        {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000
+        }
+
+    );
+
+} else {
+    console.log("GPS no soportado");
+}
 
 </script>
 
 </body>
 </html>
-

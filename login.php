@@ -1,7 +1,4 @@
-
 <?php
-
-session_start();
 
 include("conexion.php");
 
@@ -19,19 +16,25 @@ $params = array($usuario, $password);
 
 $stmt = sqlsrv_query($conn, $sql, $params);
 
+if($stmt === false){
+    die(print_r(sqlsrv_errors(), true));
+}
+
 $user = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
 
 if($user){
 
-    $_SESSION["id_bus"] = $user["id_bus"];
+    $id_bus = $user["id_bus"];
 
-    header("Location: gps.php");
+    echo "<script>
+        window.location.href='gps.php?id_bus=$id_bus';
+    </script>";
+    exit();
 
 }else{
 
-    echo "Usuario incorrecto";
+    echo "Usuario o contraseña incorrectos";
 
 }
 
 ?>
-

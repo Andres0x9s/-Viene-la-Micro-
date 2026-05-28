@@ -1,14 +1,16 @@
 <?php
 
-$serverName = "TU_SERVIDOR.database.windows.net";
+$serverName = "emprendedores-sql-server.database.windows.net";
 
 $connectionOptions = array(
-    "Database" => "TU_DATABASE",
-    "Uid" => "TU_USUARIO",
-    "PWD" => "TU_PASSWORD",
+    "Database" => "EmprendedoresDB",
+    "Uid" => "adminuser",
+    "PWD" => "pepo123@",
     "Encrypt" => true,
     "TrustServerCertificate" => false
 );
+
+
 
 $conn = sqlsrv_connect($serverName, $connectionOptions);
 

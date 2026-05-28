@@ -4,15 +4,20 @@
 
 <meta charset="UTF-8">
 
-<title>Mapa</title>
+<title>Mapa Buses</title>
 
 <link rel="stylesheet"
 href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
 
+body{
+    margin:0;
+}
+
 #map{
     height:100vh;
+    width:100%;
 }
 
 </style>
@@ -29,27 +34,69 @@ href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 const map = L.map('map').setView([-36.606, -72.103], 14);
 
 L.tileLayer(
-'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+    maxZoom:19
+}
 ).addTo(map);
 
-const marker = L.marker([-36.606, -72.103]).addTo(map);
+// ICONO DEL BUS
+const busIcon = L.icon({
 
+    iconUrl: 'busicono.png',
+    iconSize: [45, 45],
+    iconAnchor: [22, 22],
+    popupAnchor: [0, -20]
+
+});
+
+// GUARDAR MARCADORES
+let markers = {};
+
+// ACTUALIZAR BUSES
 async function actualizar(){
 
-    const res = await fetch("ubicacion.php");
+    try{
 
-    const data = await res.json();
+        const res = await fetch("ubicacion.php");
+        const buses = await res.json();
 
-    if(data){
+        console.log("BUSES RAW:", buses);
 
-        marker.setLatLng([data.lat, data.lng]);
+        for(let bus of buses){
 
-        map.setView([data.lat, data.lng]);
+            const id = bus.id_bus;
 
+            // 🔥 FIX CRÍTICO: limpiar datos y evitar NaN
+            const lat = Number(String(bus.lat).replace(',', '.'));
+            const lng = Number(String(bus.lng).replace(',', '.'));
+
+            // ❌ si datos inválidos, ignorar
+            if(isNaN(lat) || isNaN(lng)){
+                console.log("COORDENADA INVALIDA:", bus);
+                continue;
+            }
+
+            // SI EL BUS YA EXISTE
+            if(markers[id]){
+                markers[id].setLatLng([lat, lng]);
+            }
+
+            // SI ES NUEVO
+            else{
+                markers[id] = L.marker([lat, lng], {icon: busIcon})
+                .addTo(map)
+                .bindPopup("Bus " + id);
+            }
+        }
+
+    }catch(error){
+        console.log("ERROR MAPA:", error);
     }
 
 }
 
+actualizar();
 setInterval(actualizar, 3000);
 
 </script>

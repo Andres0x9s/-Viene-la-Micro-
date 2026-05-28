@@ -2,13 +2,16 @@
 
 include("conexion.php");
 
-$lat = $_POST["lat"];
-$lng = $_POST["lng"];
+$id_bus = $_POST["id_bus"];
+$lat = str_replace(',', '.', $_POST["lat"]);
+$lng = str_replace(',', '.', $_POST["lng"]);
 
-$sql = "INSERT INTO ubicaciones(lat,lng)
-VALUES(?, ?)";
+$sql = "
+INSERT INTO ubicaciones(id_bus, lat, lng)
+VALUES(?, ?, ?)
+";
 
-$params = array($lat, $lng);
+$params = array($id_bus, $lat, $lng);
 
 $stmt = sqlsrv_query($conn, $sql, $params);
 
