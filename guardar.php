@@ -1,24 +1,31 @@
 <?php
-
 include("conexion.php");
 
 $id_bus = $_POST["id_bus"];
-$lat = str_replace(',', '.', $_POST["lat"]);
-$lng = str_replace(',', '.', $_POST["lng"]);
+$lat = $_POST["lat"];
+$lng = $_POST["lng"];
 
 $sql = "
-INSERT INTO ubicaciones(id_bus, lat, lng)
-VALUES(?, ?, ?)
+IF EXISTS (SELECT 1 FROM bus_estado WHERE id_bus = ?)
+    UPDATE bus_estado
+    SET lat = ?, lng = ?, fecha = GETDATE()
+    WHERE id_bus = ?
+ELSE
+    INSERT INTO bus_estado (id_bus, lat, lng, fecha)
+    VALUES (?, ?, ?, GETDATE())
 ";
 
-$params = array($id_bus, $lat, $lng);
+$params = [
+    $id_bus,
+    $lat,
+    $lng,
+    $id_bus,
+    $id_bus,
+    $lat,
+    $lng
+];
 
-$stmt = sqlsrv_query($conn, $sql, $params);
+sqlsrv_query($conn, $sql, $params);
 
-if($stmt){
-    echo "ok";
-}else{
-    print_r(sqlsrv_errors());
-}
-
+echo "OK";
 ?>

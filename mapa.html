@@ -1,31 +1,208 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Mapa Buses</title>
+<title>Mapa - Viene La Micro</title>
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
 
-body{
+html, body{
     margin:0;
+    padding:0;
+    overflow:hidden;
+    background:#0b0b0b;
+    font-family:sans-serif;
 }
 
+/* =========================
+   MAPA
+========================= */
 #map{
-    height:100vh;
+    position:absolute;
+    top:0;
+    left:0;
     width:100%;
+    height:100%;
+    z-index:1;
+}
+
+/* =========================
+   PANEL
+========================= */
+#panel{
+    position:absolute;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:220px;
+    z-index:10;
+    background:rgba(17,17,17,0.95);
+    backdrop-filter: blur(10px);
+    border-top:1px solid rgba(255,255,255,0.1);
+    padding:20px;
+    overflow-x:auto;
+}
+
+.cards{
+    display:flex;
+    gap:15px;
+}
+
+.card{
+    min-width:260px;
+    background:#0f0f0f;
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px;
+    padding:15px;
+    color:white;
+}
+
+/* =========================
+   HEADER FIX (NEGRO REAL)
+========================= */
+header{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    z-index:50;
+    background:rgba(0,0,0,0.85); /* 🔥 FIX */
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.header-container{
+    max-width:1400px;
+    margin:auto;
+    padding:24px 32px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-size:28px;
+    letter-spacing:0.35em;
+    font-weight:300;
+    color:white;
+}
+
+nav{
+    display:none;
+}
+
+@media(min-width:1024px){
+    nav{
+        display:flex;
+        gap:40px;
+        text-transform:uppercase;
+        font-size:12px;
+        letter-spacing:0.25em;
+        color:#d1d5db;
+    }
+}
+
+nav a{
+    color:#d1d5db;
+    text-decoration:none;
+}
+
+nav a:hover{
+    color:white;
+}
+
+.btn{
+    border:1px solid #00d4ff;
+    color:#00d4ff;
+    padding:10px 20px;
+    border-radius:999px;
+    font-size:12px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background:transparent;
+    cursor:pointer;
+    margin-left:10px;
+}
+
+.btn:hover{
+    background:#00d4ff;
+    color:black;
 }
 
 </style>
 
 </head>
+
 <body>
 
+<!-- HEADER -->
+<header>
+
+    <div class="header-container">
+
+        <div class="logo">
+            VIENE LA MICRO
+        </div>
+
+        <nav>
+            <a href="index2.php">Inicio</a>
+            <a href="#">Recorridos</a>
+            <a href="#">Horarios</a>
+            <a href="mapa.php">Mapa</a>
+        </nav>
+
+        <div>
+             <select id="filtro" onchange="cargar()" class="btn">
+                <option value="">Todos los recorridos</option>
+                <option value="2">Cato</option>
+                <option value="1">Coihueco</option>
+            </select>
+
+            <button class="btn" onclick="volver()">
+                Volver
+            </button>
+            
+        </div>
+        
+
+    </div>
+
+
+
+
+</header>
+
+<button onclick="miUbicacion()" 
+style="
+position:absolute;
+bottom:250px;
+right:20px;
+z-index:999;
+background:#00d4ff;
+color:black;
+padding:12px 16px;
+border:none;
+border-radius:50px;
+font-size:12px;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 10px 25px rgba(0,0,0,0.4);
+">
+📍 Mi ubicación
+</button>
+
+<!-- MAPA -->
 <div id="map"></div>
+
+<!-- PANEL -->
+<div id="panel">
+    <div class="cards" id="cards"></div>
+</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -33,71 +210,176 @@ body{
 
 const map = L.map('map').setView([-36.606, -72.103], 14);
 
-L.tileLayer(
-'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
     maxZoom:19
-}
-).addTo(map);
+}).addTo(map);
 
-// ICONO DEL BUS
 const busIcon = L.icon({
-
     iconUrl: 'busicono.png',
-    iconSize: [45, 45],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -20]
-
+    iconSize: [45,45]
 });
 
-// GUARDAR MARCADORES
 let markers = {};
+let userMarker = null;
 
-// ACTUALIZAR BUSES
-async function actualizar(){
+// =========================
+// VOLVER
+// =========================
+function volver(){
+    window.location.href = "index.php";
+}
 
-    try{
+// =========================
+// MI UBICACIÓN
+// =========================
+function miUbicacion(){
 
-        const res = await fetch("ubicacion.php");
-        const buses = await res.json();
+    if(!navigator.geolocation){
+        alert("GPS no disponible");
+        return;
+    }
 
-        console.log("BUSES RAW:", buses);
+    navigator.geolocation.getCurrentPosition(pos => {
 
-        for(let bus of buses){
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
 
-            const id = bus.id_bus;
+        map.setView([lat,lng],16);
 
-            // 🔥 FIX CRÍTICO: limpiar datos y evitar NaN
-            const lat = Number(String(bus.lat).replace(',', '.'));
-            const lng = Number(String(bus.lng).replace(',', '.'));
-
-            // ❌ si datos inválidos, ignorar
-            if(isNaN(lat) || isNaN(lng)){
-                console.log("COORDENADA INVALIDA:", bus);
-                continue;
-            }
-
-            // SI EL BUS YA EXISTE
-            if(markers[id]){
-                markers[id].setLatLng([lat, lng]);
-            }
-
-            // SI ES NUEVO
-            else{
-                markers[id] = L.marker([lat, lng], {icon: busIcon})
+        if(userMarker){
+            userMarker.setLatLng([lat,lng]);
+        }else{
+            userMarker = L.marker([lat,lng])
                 .addTo(map)
-                .bindPopup("Bus " + id);
-            }
+                .bindPopup("📍 Tú estás aquí")
+                .openPopup();
         }
 
-    }catch(error){
-        console.log("ERROR MAPA:", error);
-    }
+    });
 
 }
 
-actualizar();
-setInterval(actualizar, 3000);
+// =========================
+// CARGAR BUSES
+// =========================
+async function cargar(){
+
+    const filtro = document.getElementById("filtro")?.value;
+
+    let url = "ubicacion.php";
+
+    if(filtro){
+        url += "?id_ruta=" + filtro;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    let html = "";
+
+    for(let b of data){
+
+        const id = b.id_bus;
+        const lat = parseFloat(String(b.lat).replace(',', '.'));
+        const lng = parseFloat(String(b.lng).replace(',', '.'));
+
+        if(isNaN(lat)||isNaN(lng)) continue;
+
+        if(markers[id]){
+            markers[id].setLatLng([lat,lng]);
+        }else{
+            markers[id] = L.marker([lat,lng], {icon:busIcon})
+            .addTo(map);
+        }
+
+        html += `
+<div class="card"
+style="
+background:rgba(15,15,15,0.92);
+border:1px solid rgba(255,255,255,0.08);
+border-radius:20px;
+padding:16px;
+min-width:270px;
+box-shadow:0 12px 30px rgba(0,0,0,0.45);
+transition:0.3s;
+">
+
+    <!-- BADGE -->
+    <div style="
+        display:inline-block;
+        background:linear-gradient(90deg,#00d4ff,#00a3ff);
+        color:black;
+        font-size:10px;
+        padding:5px 12px;
+        border-radius:20px;
+        letter-spacing:1px;
+        font-weight:bold;
+        margin-bottom:12px;
+    ">
+        🚌 BUS ACTIVO
+    </div>
+
+    <!-- PATENTE -->
+    <div style="
+        font-size:18px;
+        font-weight:600;
+        margin-bottom:6px;
+        color:white;
+    ">
+        🚍
+        patente: ${b.patente ?? 'Sin patente'}
+    </div>
+
+    <!-- DUEÑO -->
+    <div style="
+        color:#aaa;
+        font-size:13px;
+        margin-bottom:6px;
+    ">
+        👤 Dueño: ${b.dueno_linea ?? 'Sin datos'}
+    </div>
+
+    <!-- ID BUS -->
+    <div style="
+        color:#666;
+        font-size:12px;
+        margin-bottom:10px;
+    ">
+        🆔 Bus ID: ${b.id_bus}
+    </div>
+
+    
+
+    <!-- BOTÓN -->
+    <button onclick="map.setView([${lat},${lng}],17)"
+    style="
+        width:100%;
+        padding:12px;
+        border-radius:30px;
+        border:none;
+        cursor:pointer;
+        font-weight:bold;
+        font-size:13px;
+        color:black;
+        background:linear-gradient(90deg,#00d4ff,#00a3ff);
+        box-shadow:0 8px 20px rgba(0,212,255,0.25);
+        transition:0.3s;
+    "
+    onmouseover="this.style.transform='scale(1.03)'"
+    onmouseout="this.style.transform='scale(1)'"
+    >
+        🚍 SEGUIR BUS
+    </button>
+
+</div>
+`;
+    }
+
+    document.getElementById("cards").innerHTML = html;
+}
+
+cargar();
+setInterval(cargar,3000);
 
 </script>
 

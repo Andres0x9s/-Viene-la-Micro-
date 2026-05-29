@@ -1,21 +1,21 @@
 <?php
 
-$serverName = "emprendedores-sql-server.database.windows.net";
+$server = "ANDRESASUS\SQLEXPRESS";
 
-$connectionOptions = array(
-    "Database" => ".\\SQLEXPRESS",
-    "Uid" => "sa",
+$connectionInfo = array(
+    "Database" => "emprendedoresdb",
+    "UID" => "sa",
     "PWD" => "12345",
-    "Encrypt" => true,
-    "TrustServerCertificate" => false
+    "TrustServerCertificate" => true
 );
 
-
-
-$conn = sqlsrv_connect($serverName, $connectionOptions);
+$conn = sqlsrv_connect($server, $connectionInfo);
 
 if($conn === false){
     die(print_r(sqlsrv_errors(), true));
 }
 
+
 ?>
+
+
