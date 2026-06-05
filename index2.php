@@ -137,17 +137,21 @@ body{
                 🚍 Próximo Bus
             </h2>
 
+    
+            
+
 <?php
 
 date_default_timezone_set("America/Santiago");
 
 $sqlProximo = "SELECT TOP 1
                     b.patente,
-                    r.nombre_ruta,
+                    l.direccion,
                     h.hora_salida
                 FROM horarios h
                 INNER JOIN buses b ON h.id_bus = b.id_bus
                 INNER JOIN rutas r ON b.id_ruta = r.id_ruta
+                INNER JOIN horarios l ON b.id_bus = l.id_bus
                 WHERE h.hora_salida >= CAST(GETDATE() AS TIME)
                 ORDER BY h.hora_salida";
 
@@ -175,7 +179,7 @@ if($bus){
                     </div>
 
                     <div class="text-3xl font-light">
-                        <?= $bus["nombre_ruta"] ?>
+                        <?= $bus["direccion"] ?>
                     </div>
 
                 </div>
@@ -257,7 +261,7 @@ if($bus){
 <?php
 
 $sql = "SELECT 
-            r.nombre_ruta,
+            h.direccion,
             r.inicio,
             r.fin,
             b.patente,
@@ -286,7 +290,7 @@ while($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)){
 
                     <h3 class="text-4xl font-light mb-6">
 
-                        <?= $row["nombre_ruta"] ?>
+                        <?= $row["direccion"] ?>
 
                     </h3>
 
