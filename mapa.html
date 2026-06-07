@@ -14,13 +14,12 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
-*{ box-sizing:border-box; }
+*{box-sizing:border-box}
 
 :root{
     --bg:#020617;
     --cyan:#25f4ff;
     --cyan2:#00c8e8;
-    --text:#ffffff;
     --muted:#94a3b8;
     --border:rgba(255,255,255,.1);
 }
@@ -41,7 +40,7 @@ html,body{
     z-index:1;
     width:100%;
     height:100%;
-    filter:saturate(1.05) contrast(1.02) brightness(1);
+    filter:saturate(1.08) contrast(1.03) brightness(1.02);
 }
 
 .map-overlay{
@@ -50,20 +49,8 @@ html,body{
     z-index:2;
     pointer-events:none;
     background:
-        linear-gradient(180deg, rgba(2,6,23,.18), rgba(2,6,23,.03) 35%, rgba(2,6,23,.22)),
-        linear-gradient(90deg, rgba(2,6,23,.22), transparent 35%, rgba(2,6,23,.08));
-}
-
-.grid-overlay{
-    position:absolute;
-    inset:0;
-    z-index:3;
-    pointer-events:none;
-    opacity:.12;
-    background-image:
-        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-    background-size:70px 70px;
+        linear-gradient(180deg, rgba(2,6,23,.12), transparent 35%, rgba(2,6,23,.18)),
+        linear-gradient(90deg, rgba(2,6,23,.14), transparent 35%, rgba(2,6,23,.05));
 }
 
 .topbar{
@@ -81,8 +68,8 @@ html,body{
     padding:14px 16px;
     border:1px solid var(--border);
     border-radius:26px;
-    background:rgba(2,6,23,.72);
-    backdrop-filter:blur(20px);
+    background:rgba(2,6,23,.74);
+    backdrop-filter:blur(18px);
     box-shadow:0 22px 70px rgba(0,0,0,.42);
 }
 
@@ -169,13 +156,11 @@ html,body{
 .btn-primary{
     color:#020617;
     background:linear-gradient(135deg,var(--cyan),var(--cyan2));
-    box-shadow:0 0 28px rgba(37,244,255,.28);
 }
 
 select.btn{
     appearance:none;
     min-width:210px;
-    color:white;
     padding-right:40px;
     background:
         linear-gradient(45deg, transparent 50%, var(--cyan) 50%) calc(100% - 21px) 50%/7px 7px no-repeat,
@@ -190,14 +175,14 @@ select.btn{
     width:330px;
     padding:22px;
     border-radius:28px;
-    background:rgba(2,6,23,.74);
+    background:rgba(2,6,23,.76);
     border:1px solid var(--border);
     backdrop-filter:blur(18px);
     box-shadow:0 20px 60px rgba(0,0,0,.42);
     color:white;
 }
 
-.status-panel .eyebrow{
+.eyebrow{
     display:inline-flex;
     align-items:center;
     gap:8px;
@@ -257,8 +242,8 @@ select.btn{
 .location-btn{
     position:absolute;
     right:28px;
-    bottom:28px;
-    z-index:40;
+    bottom:112px;
+    z-index:45;
     display:flex;
     align-items:center;
     gap:9px;
@@ -271,15 +256,81 @@ select.btn{
     font-weight:900;
     cursor:pointer;
     box-shadow:0 18px 45px rgba(0,0,0,.45), 0 0 30px rgba(37,244,255,.28);
+}
+
+.active-buses{
+    position:absolute;
+    left:22px;
+    right:22px;
+    bottom:20px;
+    z-index:44;
+    display:flex;
+    gap:12px;
+    overflow-x:auto;
+    padding:4px;
+    scrollbar-width:none;
+}
+
+.active-buses::-webkit-scrollbar{
+    display:none;
+}
+
+.bus-mini-card{
+    min-width:230px;
+    background:rgba(2,6,23,.84);
+    backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;
+    padding:13px;
+    color:white;
+    box-shadow:0 14px 36px rgba(0,0,0,.38);
     transition:.25s;
 }
 
-.location-btn:hover{
-    transform:translateY(-3px) scale(1.03);
+.bus-mini-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(37,244,255,.4);
 }
 
-#cards{
-    display:none;
+.bus-mini-status{
+    color:#67e8f9;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.12em;
+    margin-bottom:6px;
+}
+
+.bus-mini-patente{
+    font-size:15px;
+    font-weight:900;
+}
+
+.bus-mini-owner{
+    color:#94a3b8;
+    font-size:12px;
+    margin-top:4px;
+}
+
+.bus-mini-btn{
+    width:100%;
+    margin-top:10px;
+    border:none;
+    border-radius:999px;
+    padding:8px;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+    color:#020617;
+    font-weight:900;
+    cursor:pointer;
+}
+
+.empty-card{
+    min-width:300px;
+    color:#cbd5e1;
+    background:rgba(2,6,23,.82);
+    border:1px dashed rgba(255,255,255,.18);
+    border-radius:20px;
+    padding:18px;
+    font-size:13px;
 }
 
 .leaflet-control-zoom{
@@ -294,7 +345,6 @@ select.btn{
     background:rgba(2,6,23,.82)!important;
     color:var(--cyan)!important;
     border:1px solid rgba(255,255,255,.12)!important;
-    backdrop-filter:blur(12px);
 }
 
 .leaflet-popup-content-wrapper,
@@ -302,12 +352,6 @@ select.btn{
     background:#020617;
     color:white;
     border:1px solid rgba(37,244,255,.35);
-    box-shadow:0 14px 40px rgba(0,0,0,.45);
-}
-
-.leaflet-popup-content{
-    font-family:"Poppins",sans-serif;
-    font-weight:700;
 }
 
 .user-dot{
@@ -324,7 +368,6 @@ select.btn{
         top:14px;
         width:calc(100% - 28px);
         flex-wrap:wrap;
-        border-radius:24px;
     }
 
     .nav{
@@ -332,12 +375,6 @@ select.btn{
         width:100%;
         overflow-x:auto;
         gap:18px;
-        padding:4px 0;
-    }
-
-    .nav a{
-        white-space:nowrap;
-        font-size:13px;
     }
 
     .actions{
@@ -351,9 +388,19 @@ select.btn{
 
     .location-btn{
         right:16px;
-        bottom:24px;
+        bottom:110px;
         padding:13px 16px;
         font-size:12px;
+    }
+
+    .active-buses{
+        left:12px;
+        right:12px;
+        bottom:14px;
+    }
+
+    .bus-mini-card{
+        min-width:215px;
     }
 
     .leaflet-control-zoom{
@@ -368,7 +415,6 @@ select.btn{
 
 <div id="map"></div>
 <div class="map-overlay"></div>
-<div class="grid-overlay"></div>
 
 <header class="topbar">
     <a class="brand" href="index.php">
@@ -407,9 +453,7 @@ select.btn{
 
     <h1>Ubicación de buses</h1>
 
-    <p>
-        Revisa las micros activas, filtra recorridos y sigue cada bus en el mapa.
-    </p>
+    <p>Revisa las micros activas, filtra recorridos y sigue cada bus en el mapa.</p>
 
     <div class="quick-stats">
         <div class="stat">
@@ -429,7 +473,7 @@ select.btn{
     Mi ubicación
 </button>
 
-<div id="cards"></div>
+<div id="activeBuses" class="active-buses"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -459,6 +503,7 @@ const userIcon = L.divIcon({
 
 let markers = {};
 let userMarker = null;
+let primeraCarga = true;
 
 function volver(){
     window.location.href = "index.php";
@@ -491,20 +536,27 @@ function miUbicacion(){
 
 async function cargar(){
     const filtro = document.getElementById("filtro")?.value;
-
     let url = "ubicacion.php";
 
     if(filtro){
-        url += "?id_ruta=" + filtro;
+        url += "?id_ruta=" + encodeURIComponent(filtro);
     }
+
+    url += (url.includes("?") ? "&" : "?") + "t=" + Date.now();
 
     try{
         const res = await fetch(url);
+
+        if(!res.ok){
+            throw new Error("Error HTTP " + res.status);
+        }
+
         const data = await res.json();
 
-        let html = "";
+        let cardsHtml = "";
         let activos = 0;
         let busesVisibles = {};
+        let bounds = [];
 
         for(let b of data){
             const id = b.id_bus;
@@ -515,18 +567,28 @@ async function cargar(){
 
             activos++;
             busesVisibles[id] = true;
+            bounds.push([lat,lng]);
+
+            const patente = b.patente ?? "Sin patente";
+            const dueno = b.dueno_linea ?? "Sin datos";
 
             if(markers[id]){
                 markers[id].setLatLng([lat,lng]);
+                markers[id].setPopupContent(`🚍 Bus ${patente}`);
             }else{
                 markers[id] = L.marker([lat,lng], {icon:busIcon})
                     .addTo(map)
-                    .bindPopup(`🚍 Bus ${b.patente ?? 'Sin patente'}`);
+                    .bindPopup(`🚍 Bus ${patente}`);
             }
 
-            html += `
-                <div>
-                    BUS ${b.patente ?? 'Sin patente'}
+            cardsHtml += `
+                <div class="bus-mini-card">
+                    <div class="bus-mini-status">● BUS ACTIVO</div>
+                    <div class="bus-mini-patente">🚍 ${patente}</div>
+                    <div class="bus-mini-owner">${dueno}</div>
+                    <button class="bus-mini-btn" onclick="map.setView([${lat},${lng}],17)">
+                        Seguir bus
+                    </button>
                 </div>
             `;
         }
@@ -539,10 +601,33 @@ async function cargar(){
         }
 
         document.getElementById("totalBuses").textContent = activos;
-        document.getElementById("cards").innerHTML = html;
+
+        if(cardsHtml === ""){
+            cardsHtml = `
+                <div class="empty-card">
+                    No hay buses activos disponibles. Revisa si el conductor tiene abierto el GPS.
+                </div>
+            `;
+        }
+
+        document.getElementById("activeBuses").innerHTML = cardsHtml;
+
+        if(primeraCarga && bounds.length > 0){
+            map.fitBounds(bounds, {
+                padding:[80,80],
+                maxZoom:15
+            });
+            primeraCarga = false;
+        }
 
     }catch(error){
-        document.getElementById("cards").innerHTML = "";
+        document.getElementById("activeBuses").innerHTML = `
+            <div class="empty-card">
+                No se pudo cargar <b>ubicacion.php</b>. Revisa que el archivo exista y devuelva JSON.
+            </div>
+        `;
+        document.getElementById("totalBuses").textContent = "0";
+        console.error(error);
     }
 }
 

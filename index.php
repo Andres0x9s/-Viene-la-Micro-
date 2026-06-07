@@ -3,6 +3,7 @@ session_start();
 include("conexion.php");
 
 $logged = isset($_SESSION['usuario']);
+$filtroDireccion = $_GET["direccion"] ?? "";
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -20,9 +21,7 @@ $logged = isset($_SESSION['usuario']);
   <link rel="stylesheet" href="assets/css/style.css">
 
   <style>
-    html{
-      scroll-behavior:smooth;
-    }
+    html{scroll-behavior:smooth;}
 
     .data-section{
       padding:110px 7%;
@@ -39,38 +38,29 @@ $logged = isset($_SESSION['usuario']);
       box-shadow:0 24px 80px rgba(0,0,0,.35);
     }
 
-    .next-grid{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:22px;
-      margin-top:34px;
+    .filter-box{
+      margin:32px 0 10px;
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      align-items:center;
     }
 
-    .next-box{
-      background:rgba(0,0,0,.28);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:24px;
-      padding:28px;
-    }
-
-    .next-box small{
-      display:block;
-      color:#94a3b8;
-      text-transform:uppercase;
-      letter-spacing:.18em;
-      font-size:11px;
-      margin-bottom:12px;
-    }
-
-    .next-box strong{
+    .filter-select{
+      min-width:280px;
+      padding:15px 18px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
       color:white;
-      font-size:32px;
+      font-family:inherit;
       font-weight:700;
+      outline:none;
     }
 
-    .next-box .cyan{
-      color:#25f4ff;
-      font-size:42px;
+    .filter-select option{
+      background:#020617;
+      color:white;
     }
 
     .routes-grid{
@@ -116,11 +106,11 @@ $logged = isset($_SESSION['usuario']);
       font-size:15px;
     }
 
-    .route-card a{
-      margin-top:22px;
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
+    .time-big{
+      font-size:42px;
+      color:#25f4ff;
+      font-weight:800;
+      margin:10px 0 16px;
     }
 
     .empty-message{
@@ -130,18 +120,10 @@ $logged = isset($_SESSION['usuario']);
     }
 
     @media(max-width:950px){
-      .next-grid,
-      .routes-grid{
-        grid-template-columns:1fr;
-      }
-
-      .data-section{
-        padding:80px 5%;
-      }
-
-      .data-card{
-        padding:28px;
-      }
+      .routes-grid{grid-template-columns:1fr;}
+      .data-section{padding:80px 5%;}
+      .data-card{padding:28px;}
+      .filter-select{width:100%; min-width:0;}
     }
   </style>
 
@@ -162,7 +144,7 @@ $logged = isset($_SESSION['usuario']);
 
   <header class="site-header" id="inicio">
     <nav class="navbar">
-      <a class="brand" href="#inicio" aria-label="Inicio Viene la Micro">
+      <a class="brand" href="#inicio">
         <span class="brand-icon"><i class="fa-solid fa-bus-simple"></i></span>
         <span>Viene la Micro</span>
       </a>
@@ -183,6 +165,7 @@ $logged = isset($_SESSION['usuario']);
           <a href="admin/dashboard.php" class="btn btn-ghost">Panel</a>
           <a href="admin/logout.php" class="btn btn-primary">Salir</a>
         <?php else: ?>
+          <a href="conductores/login.php" class="btn btn-ghost">Conductor</a>
           <a href="#recorridos" class="btn btn-primary">Ver Buses</a>
         <?php endif; ?>
       </div>
@@ -207,6 +190,10 @@ $logged = isset($_SESSION['usuario']);
 
           <a href="mapa.html" class="btn btn-glass btn-large">
             Ver Mapa <i class="fa-solid fa-location-dot"></i>
+          </a>
+
+          <a href="conductores/login.php" class="btn btn-glass btn-large">
+            Soy conductor <i class="fa-solid fa-id-card"></i>
           </a>
         </div>
 
@@ -248,59 +235,104 @@ $logged = isset($_SESSION['usuario']);
       <div class="data-card">
         <div class="section-heading">
           <span>Horarios</span>
-          <h2>🚍 Próximo Bus</h2>
-          <p>Consulta el bus más cercano según la hora actual.</p>
+          <h2>🚍 Próximas Salidas</h2>
+          <p>Filtra el recorrido que necesitas y revisa los próximos buses programados.</p>
         </div>
 
-        <?php
-        date_default_timezone_set("America/Santiago");
+        <form method="GET" action="index.php#proximo-bus" class="filter-box">
+          <select name="direccion" class="filter-select" onchange="this.form.submit()">
+            <option value="">Todos los recorridos</option>
 
-        $sqlProximo = "SELECT TOP 1
-                            b.patente,
-                            l.direccion,
-                            h.hora_salida
-                        FROM horarios h
-                        INNER JOIN buses b ON h.id_bus = b.id_bus
-                        INNER JOIN rutas r ON b.id_ruta = r.id_ruta
-                        INNER JOIN horarios l ON b.id_bus = l.id_bus
-                        WHERE h.hora_salida >= CAST(GETDATE() AS TIME)
-                        ORDER BY h.hora_salida";
+            <?php
+            $sqlDirecciones = "SELECT DISTINCT direccion FROM horarios ORDER BY direccion";
+            $resDirecciones = sqlsrv_query($conn, $sqlDirecciones);
 
-        $resultadoProximo = sqlsrv_query($conn, $sqlProximo);
-        $bus = $resultadoProximo ? sqlsrv_fetch_array($resultadoProximo, SQLSRV_FETCH_ASSOC) : null;
+            if($resDirecciones){
+              while($dir = sqlsrv_fetch_array($resDirecciones, SQLSRV_FETCH_ASSOC)){
+                $direccion = $dir["direccion"];
+                $selected = ($filtroDireccion === $direccion) ? "selected" : "";
+            ?>
+              <option value="<?= htmlspecialchars($direccion) ?>" <?= $selected ?>>
+                <?= htmlspecialchars($direccion) ?>
+              </option>
+            <?php
+              }
+            }
+            ?>
+          </select>
 
-        if($bus){
-          $horaBus = $bus["hora_salida"]->format('H:i');
+          <?php if($filtroDireccion): ?>
+            <a href="index.php#proximo-bus" class="btn btn-glass">
+              Limpiar filtro
+            </a>
+          <?php endif; ?>
+        </form>
 
-          $actual = strtotime(date("H:i:s"));
-          $salida = strtotime($horaBus);
-          $min = round(($salida - $actual) / 60);
-        ?>
+        <div class="routes-grid">
+          <?php
+          date_default_timezone_set("America/Santiago");
 
-        <div class="next-grid">
-          <div class="next-box">
-            <small>Ruta</small>
-            <strong><?= $bus["direccion"] ?></strong>
+          $params = [];
+
+          $sqlProximos = "SELECT TOP 6
+                              b.patente,
+                              b.dueno_linea,
+                              r.nombre_ruta,
+                              h.direccion,
+                              h.hora_salida
+                          FROM horarios h
+                          INNER JOIN buses b ON h.id_bus = b.id_bus
+                          INNER JOIN rutas r ON b.id_ruta = r.id_ruta
+                          WHERE h.hora_salida >= CAST(GETDATE() AS TIME)";
+
+          if($filtroDireccion !== ""){
+            $sqlProximos .= " AND h.direccion = ?";
+            $params[] = $filtroDireccion;
+          }
+
+          $sqlProximos .= " ORDER BY h.hora_salida";
+
+          $resultadoProximos = sqlsrv_query($conn, $sqlProximos, $params);
+          $hayProximos = false;
+
+          if($resultadoProximos){
+            while($bus = sqlsrv_fetch_array($resultadoProximos, SQLSRV_FETCH_ASSOC)){
+              $hayProximos = true;
+          ?>
+
+          <article class="route-card">
+            <div class="line-owner">
+              <?= htmlspecialchars($bus["nombre_ruta"]) ?>
+            </div>
+
+            <h3><?= htmlspecialchars($bus["direccion"]) ?></h3>
+
+            <div class="time-big">
+              <?= $bus["hora_salida"]->format('H:i') ?>
+            </div>
+
+            <p>🚌 Patente: <?= htmlspecialchars($bus["patente"]) ?></p>
+            <p>👤 Línea: <?= htmlspecialchars($bus["dueno_linea"]) ?></p>
+
+            <a href="mapa.html" class="btn btn-glass">
+              Ver en mapa <i class="fa-solid fa-location-dot"></i>
+            </a>
+          </article>
+
+          <?php
+            }
+          }
+
+          if(!$hayProximos){
+          ?>
+
+          <div class="empty-message">
+            No hay más salidas disponibles para hoy
+            <?= $filtroDireccion ? "en " . htmlspecialchars($filtroDireccion) : "" ?>.
           </div>
 
-          <div class="next-box">
-            <small>Hora Salida</small>
-            <strong class="cyan"><?= $horaBus ?></strong>
-          </div>
-
-          <div class="next-box">
-            <small>Tiempo Restante</small>
-            <strong><?= $min ?> min</strong>
-          </div>
+          <?php } ?>
         </div>
-
-        <?php } else { ?>
-
-        <div class="empty-message">
-          No hay buses próximos disponibles.
-        </div>
-
-        <?php } ?>
       </div>
     </section>
 
@@ -333,13 +365,13 @@ $logged = isset($_SESSION['usuario']);
 
         <article class="route-card">
           <div class="line-owner">
-            <?= $row["dueno_linea"] ?>
+            <?= htmlspecialchars($row["dueno_linea"]) ?>
           </div>
 
-          <h3><?= $row["direccion"] ?></h3>
+          <h3><?= htmlspecialchars($row["direccion"]) ?></h3>
 
-          <p>📍 <?= $row["inicio"] ?> → <?= $row["fin"] ?></p>
-          <p>🚌 Patente: <?= $row["patente"] ?></p>
+          <p>📍 <?= htmlspecialchars($row["inicio"]) ?> → <?= htmlspecialchars($row["fin"]) ?></p>
+          <p>🚌 Patente: <?= htmlspecialchars($row["patente"]) ?></p>
           <p>⏰ Salida: <?= $row["hora_salida"]->format('H:i') ?></p>
 
           <a href="mapa.html" class="btn btn-glass">
@@ -375,7 +407,7 @@ $logged = isset($_SESSION['usuario']);
     <section class="cta section-reveal">
       <h2>¿Listo para encontrar tu próxima micro?</h2>
       <p>Entra al sistema y revisa la información disponible al tiro.</p>
-      <a href="#recorridos" class="btn btn-primary btn-large">Comenzar ahora</a>
+      <a href="#proximo-bus" class="btn btn-primary btn-large">Buscar salida</a>
     </section>
   </main>
 
