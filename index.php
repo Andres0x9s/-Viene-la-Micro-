@@ -420,6 +420,43 @@ $filtroDireccion = $_GET["direccion"] ?? "";
     <p>© 2026 - Proyecto académico.</p>
   </footer>
 
+  <div id="busTransition" class="bus-transition">
+    <div class="bus-transition-text">Cargando ruta...</div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("a[href]").forEach(link => {
+        const href = link.getAttribute("href");
+
+        if(
+          !href ||
+          href.startsWith("#") ||
+          href.startsWith("javascript:") ||
+          href.startsWith("mailto:") ||
+          href.startsWith("tel:") ||
+          link.target === "_blank"
+        ){
+          return;
+        }
+
+        link.addEventListener("click", e => {
+          e.preventDefault();
+
+          if(window.startBusCrashTransition){
+            window.startBusCrashTransition(href);
+          }else{
+            const transition = document.getElementById("busTransition");
+            transition?.classList.add("active");
+            setTimeout(() => {
+              window.location.href = href;
+            }, 650);
+          }
+        });
+      });
+    });
+  </script>
+
   <script src="assets/js/main.js"></script>
   <script type="module" src="assets/js/micro3d.js"></script>
 </body>
