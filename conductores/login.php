@@ -2,8 +2,20 @@
 session_start();
 include("../conexion.php");
 
-if (isset($_SESSION["conductor_id"])) {
+/*
+Flujo correcto:
+- Si ya tiene viaje activo en sesión -> gps.php
+- Si está logeado pero aún no eligió bus -> seleccionar_bus.php
+- Si no está logeado -> mostrar login
+*/
+
+if (isset($_SESSION["conductor_id"]) && isset($_SESSION["id_bus"]) && isset($_SESSION["id_viaje"])) {
     header("Location: gps.php");
+    exit;
+}
+
+if (isset($_SESSION["conductor_id"]) && isset($_SESSION["id_ruta"])) {
+    header("Location: seleccionar_bus.php");
     exit;
 }
 
@@ -13,7 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $usuario = trim($_POST["usuario"] ?? "");
     $password = trim($_POST["password"] ?? "");
 
-    $sql = "SELECT id, usuario, password, id_bus 
+    $sql = "SELECT id, usuario, password, id_ruta, estado
             FROM conductores 
             WHERE usuario = ?";
 
@@ -21,13 +33,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($stmt && $conductor = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 
-        if ($password === $conductor["password"]) {
-            $_SESSION["conductor_id"] = $conductor["id"];
-            $_SESSION["conductor_usuario"] = $conductor["usuario"];
-            $_SESSION["id_bus"] = $conductor["id_bus"];
+        if (($conductor["estado"] ?? "") !== "activo") {
+            $error = "Este conductor se encuentra inactivo.";
+        } elseif ($password === $conductor["password"]) {
 
-            header("Location: gps.php");
-            exit;
+            if (empty($conductor["id_ruta"])) {
+                $error = "Este conductor no tiene una línea asignada.";
+            } else {
+                $_SESSION["conductor_id"] = $conductor["id"];
+                $_SESSION["conductor_usuario"] = $conductor["usuario"];
+                $_SESSION["id_ruta"] = $conductor["id_ruta"];
+
+                unset($_SESSION["id_bus"]);
+                unset($_SESSION["id_viaje"]);
+                unset($_SESSION["direccion"]);
+
+                header("Location: seleccionar_bus.php");
+                exit;
+            }
+
         } else {
             $error = "Usuario o contraseña incorrectos.";
         }
@@ -166,7 +190,7 @@ button{
     <div class="logo">🚌</div>
 
     <h1>Conductor</h1>
-    <p>Inicia sesión para compartir ubicación GPS.</p>
+    <p>Inicia sesión para seleccionar tu bus y compartir ubicación GPS.</p>
 
     <?php if($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>
@@ -175,7 +199,7 @@ button{
     <form method="POST">
         <input type="text" name="usuario" placeholder="Usuario" required>
         <input type="password" name="password" placeholder="Contraseña" required>
-        <button type="submit">Ingresar al GPS</button>
+        <button type="submit">Ingresar</button>
     </form>
 
     <a href="../index.php" class="back">Volver al inicio</a>
