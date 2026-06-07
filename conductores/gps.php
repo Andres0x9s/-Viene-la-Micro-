@@ -1,12 +1,19 @@
 <?php
 session_start();
 
-if (!isset($_SESSION["conductor_id"]) || !isset($_SESSION["id_bus"])) {
+if (!isset($_SESSION["conductor_id"])) {
     header("Location: login.php");
     exit;
 }
 
+if (!isset($_SESSION["id_bus"]) || !isset($_SESSION["id_viaje"])) {
+    header("Location: seleccionar_bus.php");
+    exit;
+}
+
 $id_bus = $_SESSION["id_bus"];
+$id_viaje = $_SESSION["id_viaje"];
+$direccion = $_SESSION["direccion"] ?? "Sin dirección";
 $usuario = $_SESSION["conductor_usuario"] ?? "Conductor";
 ?>
 <!DOCTYPE html>
@@ -48,7 +55,7 @@ body::before{
     position:relative;
     z-index:2;
     width:92%;
-    max-width:520px;
+    max-width:560px;
     padding:36px;
     border-radius:32px;
     background:rgba(15,23,42,.78);
@@ -123,10 +130,16 @@ h1{
     line-height:1.6;
 }
 
+.actions-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-top:22px;
+}
+
 .logout{
     display:block;
     text-align:center;
-    margin-top:22px;
     padding:14px;
     border-radius:999px;
     color:white;
@@ -136,13 +149,24 @@ h1{
     font-weight:800;
 }
 
+.finish{
+    background:linear-gradient(135deg,#25f4ff,#00c8e8);
+    color:#020617;
+    border:none;
+}
+
+.finish:hover{
+    color:#020617;
+    transform:translateY(-2px);
+}
+
 .logout:hover{
     border-color:rgba(37,244,255,.45);
     color:#25f4ff;
 }
 
 @media(max-width:600px){
-    .info-grid{
+    .info-grid, .actions-row{
         grid-template-columns:1fr;
     }
 }
@@ -165,8 +189,18 @@ h1{
 
     <div class="info-grid">
         <div class="box">
-            <small>Bus asignado</small>
+            <small>Bus seleccionado</small>
             <strong>ID <?= htmlspecialchars($id_bus) ?></strong>
+        </div>
+
+        <div class="box">
+            <small>Viaje activo</small>
+            <strong>#<?= htmlspecialchars($id_viaje) ?></strong>
+        </div>
+
+        <div class="box">
+            <small>Dirección</small>
+            <strong style="font-size:15px;"><?= htmlspecialchars($direccion) ?></strong>
         </div>
 
         <div class="box">
@@ -189,11 +223,19 @@ h1{
         Solicitando permiso de ubicación...
     </div>
 
-    <a href="logout.php" class="logout">Cerrar sesión</a>
+    <div class="actions-row">
+        <a href="finalizar_viaje.php" class="logout finish" onclick="return confirm('¿Finalizar este viaje? Se calcularán los kilómetros recorridos.');">
+            Finalizar viaje
+        </a>
+        <a href="logout.php" class="logout" onclick="return confirm('Si cierras sesión sin finalizar, el viaje quedará activo. ¿Continuar?');">
+            Cerrar sesión
+        </a>
+    </div>
 </div>
 
 <script>
 const id_bus = <?= json_encode($id_bus) ?>;
+const id_viaje = <?= json_encode($id_viaje) ?>;
 
 const estado = document.getElementById("estado");
 const latBox = document.getElementById("lat");
@@ -219,7 +261,12 @@ function enviarUbicacion(lat, lng, velocidad){
         },
         body:datos.toString()
     })
-    .then(res => res.text())
+    .then(res => {
+        if(!res.ok){
+            throw new Error("Error al guardar ubicación");
+        }
+        return res.text();
+    })
     .then(respuesta => {
         latBox.textContent = Number(lat).toFixed(5);
         lngBox.textContent = Number(lng).toFixed(5);

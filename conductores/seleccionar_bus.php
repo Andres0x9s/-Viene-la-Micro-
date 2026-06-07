@@ -10,6 +10,8 @@ if (!isset($_SESSION["conductor_id"]) || !isset($_SESSION["id_ruta"])) {
 $id_conductor = $_SESSION["conductor_id"];
 $id_ruta = $_SESSION["id_ruta"];
 $error = "";
+$mensaje = $_SESSION["viaje_finalizado_msg"] ?? "";
+unset($_SESSION["viaje_finalizado_msg"]);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $id_bus = $_POST["id_bus"] ?? null;
@@ -134,6 +136,14 @@ button{
     cursor:pointer;
 }
 
+.success{
+    color:#bbf7d0;
+    background:rgba(34,197,94,.15);
+    padding:12px;
+    border-radius:12px;
+    margin-bottom:12px;
+}
+
 .error{
     color:#fecaca;
     background:rgba(239,68,68,.15);
@@ -153,6 +163,10 @@ a{
 <div class="card">
     <h1>Seleccionar bus</h1>
     <p>Elige el bus y la dirección disponible para tu línea.</p>
+
+    <?php if($mensaje): ?>
+        <div class="success"><?= htmlspecialchars($mensaje) ?></div>
+    <?php endif; ?>
 
     <?php if($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>
