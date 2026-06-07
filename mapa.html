@@ -6,241 +6,471 @@
 
 <title>Mapa - Viene La Micro</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="icon" type="image/png" href="busicono.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
 <style>
+*{ box-sizing:border-box; }
 
-html, body{
+:root{
+    --bg:#020617;
+    --cyan:#25f4ff;
+    --cyan2:#00c8e8;
+    --text:#ffffff;
+    --muted:#94a3b8;
+    --border:rgba(255,255,255,.1);
+}
+
+html,body{
     margin:0;
     padding:0;
-    overflow:hidden;
-    background:#0b0b0b;
-    font-family:sans-serif;
-}
-
-/* =========================
-   MAPA
-========================= */
-#map{
-    position:absolute;
-    top:0;
-    left:0;
     width:100%;
     height:100%;
+    overflow:hidden;
+    font-family:"Poppins",sans-serif;
+    background:var(--bg);
+}
+
+#map{
+    position:absolute;
+    inset:0;
     z-index:1;
-}
-
-/* =========================
-   PANEL
-========================= */
-#panel{
-    position:absolute;
-    bottom:0;
-    left:0;
     width:100%;
-    height:220px;
-    z-index:10;
-    background:rgba(17,17,17,0.95);
-    backdrop-filter: blur(10px);
-    border-top:1px solid rgba(255,255,255,0.1);
-    padding:20px;
-    overflow-x:auto;
+    height:100%;
+    filter:saturate(1.05) contrast(1.02) brightness(1);
 }
 
-.cards{
-    display:flex;
-    gap:15px;
-}
-
-.card{
-    min-width:260px;
-    background:#0f0f0f;
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:20px;
-    padding:15px;
-    color:white;
-}
-
-/* =========================
-   HEADER FIX (NEGRO REAL)
-========================= */
-header{
+.map-overlay{
     position:absolute;
-    top:0;
-    left:0;
-    width:100%;
+    inset:0;
+    z-index:2;
+    pointer-events:none;
+    background:
+        linear-gradient(180deg, rgba(2,6,23,.18), rgba(2,6,23,.03) 35%, rgba(2,6,23,.22)),
+        linear-gradient(90deg, rgba(2,6,23,.22), transparent 35%, rgba(2,6,23,.08));
+}
+
+.grid-overlay{
+    position:absolute;
+    inset:0;
+    z-index:3;
+    pointer-events:none;
+    opacity:.12;
+    background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size:70px 70px;
+}
+
+.topbar{
+    position:absolute;
+    top:22px;
+    left:50%;
+    transform:translateX(-50%);
+    width:calc(100% - 44px);
+    max-width:1380px;
     z-index:50;
-    background:rgba(0,0,0,0.85); /* 🔥 FIX */
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-.header-container{
-    max-width:1400px;
-    margin:auto;
-    padding:24px 32px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:18px;
+    padding:14px 16px;
+    border:1px solid var(--border);
+    border-radius:26px;
+    background:rgba(2,6,23,.72);
+    backdrop-filter:blur(20px);
+    box-shadow:0 22px 70px rgba(0,0,0,.42);
 }
 
-.logo{
-    font-size:28px;
-    letter-spacing:0.35em;
-    font-weight:300;
-    color:white;
-}
-
-nav{
-    display:none;
-}
-
-@media(min-width:1024px){
-    nav{
-        display:flex;
-        gap:40px;
-        text-transform:uppercase;
-        font-size:12px;
-        letter-spacing:0.25em;
-        color:#d1d5db;
-    }
-}
-
-nav a{
-    color:#d1d5db;
+.brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
     text-decoration:none;
+    color:white;
 }
 
-nav a:hover{
-    color:white;
+.brand-icon{
+    width:46px;
+    height:46px;
+    display:grid;
+    place-items:center;
+    border-radius:16px;
+    color:#020617;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+    box-shadow:0 0 28px rgba(37,244,255,.35);
+    font-size:20px;
+}
+
+.brand strong{
+    display:block;
+    font-size:18px;
+    line-height:1;
+    font-weight:900;
+}
+
+.brand span:last-child{
+    display:block;
+    color:var(--muted);
+    font-size:11px;
+    margin-top:4px;
+}
+
+.nav{
+    display:flex;
+    gap:28px;
+}
+
+.nav a{
+    color:#cbd5e1;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:700;
+    transition:.25s;
+}
+
+.nav a:hover,
+.nav a.active{
+    color:var(--cyan);
+}
+
+.actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
 }
 
 .btn{
-    border:1px solid #00d4ff;
-    color:#00d4ff;
-    padding:10px 20px;
+    border:none;
+    outline:none;
+    height:44px;
+    padding:0 18px;
     border-radius:999px;
-    font-size:12px;
-    letter-spacing:0.2em;
-    text-transform:uppercase;
-    background:transparent;
+    font-family:inherit;
+    font-weight:800;
+    font-size:13px;
     cursor:pointer;
-    margin-left:10px;
+    color:white;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.1);
+    transition:.25s;
 }
 
 .btn:hover{
-    background:#00d4ff;
-    color:black;
+    transform:translateY(-2px);
+    border-color:rgba(37,244,255,.45);
+    box-shadow:0 0 24px rgba(37,244,255,.18);
 }
 
-</style>
+.btn-primary{
+    color:#020617;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+    box-shadow:0 0 28px rgba(37,244,255,.28);
+}
 
+select.btn{
+    appearance:none;
+    min-width:210px;
+    color:white;
+    padding-right:40px;
+    background:
+        linear-gradient(45deg, transparent 50%, var(--cyan) 50%) calc(100% - 21px) 50%/7px 7px no-repeat,
+        rgba(255,255,255,.08);
+}
+
+.status-panel{
+    position:absolute;
+    top:116px;
+    left:22px;
+    z-index:40;
+    width:330px;
+    padding:22px;
+    border-radius:28px;
+    background:rgba(2,6,23,.74);
+    border:1px solid var(--border);
+    backdrop-filter:blur(18px);
+    box-shadow:0 20px 60px rgba(0,0,0,.42);
+    color:white;
+}
+
+.status-panel .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    color:var(--cyan);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+}
+
+.pulse{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 16px #22c55e;
+}
+
+.status-panel h1{
+    margin:12px 0 8px;
+    font-size:30px;
+    line-height:1.05;
+}
+
+.status-panel p{
+    margin:0;
+    color:#cbd5e1;
+    font-size:13px;
+    line-height:1.7;
+}
+
+.quick-stats{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+    margin-top:18px;
+}
+
+.stat{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:14px;
+}
+
+.stat strong{
+    display:block;
+    font-size:20px;
+    color:white;
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:11px;
+}
+
+.location-btn{
+    position:absolute;
+    right:28px;
+    bottom:28px;
+    z-index:40;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    border:none;
+    border-radius:999px;
+    padding:15px 20px;
+    color:#020617;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+    font-family:inherit;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 18px 45px rgba(0,0,0,.45), 0 0 30px rgba(37,244,255,.28);
+    transition:.25s;
+}
+
+.location-btn:hover{
+    transform:translateY(-3px) scale(1.03);
+}
+
+#cards{
+    display:none;
+}
+
+.leaflet-control-zoom{
+    margin-top:125px!important;
+    margin-left:calc(100vw - 78px)!important;
+}
+
+.leaflet-control-zoom a{
+    width:42px!important;
+    height:42px!important;
+    line-height:42px!important;
+    background:rgba(2,6,23,.82)!important;
+    color:var(--cyan)!important;
+    border:1px solid rgba(255,255,255,.12)!important;
+    backdrop-filter:blur(12px);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip{
+    background:#020617;
+    color:white;
+    border:1px solid rgba(37,244,255,.35);
+    box-shadow:0 14px 40px rgba(0,0,0,.45);
+}
+
+.leaflet-popup-content{
+    font-family:"Poppins",sans-serif;
+    font-weight:700;
+}
+
+.user-dot{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:#25f4ff;
+    border:3px solid white;
+    box-shadow:0 0 0 10px rgba(37,244,255,.18), 0 0 26px rgba(37,244,255,.8);
+}
+
+@media(max-width:950px){
+    .topbar{
+        top:14px;
+        width:calc(100% - 28px);
+        flex-wrap:wrap;
+        border-radius:24px;
+    }
+
+    .nav{
+        order:3;
+        width:100%;
+        overflow-x:auto;
+        gap:18px;
+        padding:4px 0;
+    }
+
+    .nav a{
+        white-space:nowrap;
+        font-size:13px;
+    }
+
+    .actions{
+        width:100%;
+        overflow-x:auto;
+    }
+
+    .status-panel{
+        display:none;
+    }
+
+    .location-btn{
+        right:16px;
+        bottom:24px;
+        padding:13px 16px;
+        font-size:12px;
+    }
+
+    .leaflet-control-zoom{
+        margin-top:170px!important;
+        margin-left:10px!important;
+    }
+}
+</style>
 </head>
 
 <body>
 
-<!-- HEADER -->
-<header>
+<div id="map"></div>
+<div class="map-overlay"></div>
+<div class="grid-overlay"></div>
 
-    <div class="header-container">
-
-        <div class="logo">
-            VIENE LA MICRO
+<header class="topbar">
+    <a class="brand" href="index.php">
+        <div class="brand-icon">
+            <i class="fa-solid fa-bus-simple"></i>
         </div>
-
-        <nav>
-            <a href="index2.php">Inicio</a>
-            <a href="#">Recorridos</a>
-            <a href="#">Horarios</a>
-            <a href="mapa.php">Mapa</a>
-        </nav>
-
         <div>
-             <select id="filtro" onchange="cargar()" class="btn">
-                <option value="">Todos los recorridos</option>
-                <option value="2">Cato</option>
-                <option value="1">Coihueco</option>
-            </select>
-
-            <button class="btn" onclick="volver()">
-                Volver
-            </button>
-            
+            <strong>Viene la Micro</strong>
+            <span>Mapa en tiempo real</span>
         </div>
-        
+    </a>
 
+    <nav class="nav">
+        <a href="index.php">Inicio</a>
+        <a href="index.php#recorridos">Recorridos</a>
+        <a href="index.php#proximo-bus">Horarios</a>
+        <a class="active" href="mapa.html">Mapa</a>
+    </nav>
+
+    <div class="actions">
+        <select id="filtro" onchange="cargar()" class="btn">
+            <option value="">Todos los recorridos</option>
+            <option value="2">Cato</option>
+            <option value="1">Coihueco</option>
+        </select>
+
+        <button class="btn btn-primary" onclick="volver()">Volver</button>
     </div>
-
-
-
-
 </header>
 
-<button onclick="miUbicacion()" 
-style="
-position:absolute;
-bottom:250px;
-right:20px;
-z-index:999;
-background:#00d4ff;
-color:black;
-padding:12px 16px;
-border:none;
-border-radius:50px;
-font-size:12px;
-font-weight:bold;
-cursor:pointer;
-box-shadow:0 10px 25px rgba(0,0,0,0.4);
-">
-📍 Mi ubicación
+<section class="status-panel">
+    <div class="eyebrow">
+        <span class="pulse"></span>
+        GPS Online
+    </div>
+
+    <h1>Ubicación de buses</h1>
+
+    <p>
+        Revisa las micros activas, filtra recorridos y sigue cada bus en el mapa.
+    </p>
+
+    <div class="quick-stats">
+        <div class="stat">
+            <strong id="totalBuses">0</strong>
+            <span>Buses activos</span>
+        </div>
+
+        <div class="stat">
+            <strong>3s</strong>
+            <span>Actualización</span>
+        </div>
+    </div>
+</section>
+
+<button onclick="miUbicacion()" class="location-btn">
+    <i class="fa-solid fa-location-crosshairs"></i>
+    Mi ubicación
 </button>
 
-<!-- MAPA -->
-<div id="map"></div>
-
-<!-- PANEL -->
-<div id="panel">
-    <div class="cards" id="cards"></div>
-</div>
+<div id="cards"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-
-const map = L.map('map').setView([-36.606, -72.103], 14);
+const map = L.map('map', {
+    zoomControl:true
+}).setView([-36.606, -72.103], 14);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:19
+    maxZoom:19,
+    attribution:'&copy; OpenStreetMap'
 }).addTo(map);
 
 const busIcon = L.icon({
     iconUrl: 'busicono.png',
-    iconSize: [45,45]
+    iconSize: [48,48],
+    iconAnchor: [24,24],
+    popupAnchor: [0,-22]
+});
+
+const userIcon = L.divIcon({
+    className:"",
+    html:`<div class="user-dot"></div>`,
+    iconSize:[24,24],
+    iconAnchor:[12,12]
 });
 
 let markers = {};
 let userMarker = null;
 
-// =========================
-// VOLVER
-// =========================
 function volver(){
     window.location.href = "index.php";
 }
 
-// =========================
-// MI UBICACIÓN
-// =========================
 function miUbicacion(){
-
     if(!navigator.geolocation){
         alert("GPS no disponible");
         return;
     }
 
     navigator.geolocation.getCurrentPosition(pos => {
-
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
@@ -249,21 +479,17 @@ function miUbicacion(){
         if(userMarker){
             userMarker.setLatLng([lat,lng]);
         }else{
-            userMarker = L.marker([lat,lng])
+            userMarker = L.marker([lat,lng], {icon:userIcon})
                 .addTo(map)
                 .bindPopup("📍 Tú estás aquí")
                 .openPopup();
         }
-
+    }, () => {
+        alert("No se pudo obtener tu ubicación");
     });
-
 }
 
-// =========================
-// CARGAR BUSES
-// =========================
 async function cargar(){
-
     const filtro = document.getElementById("filtro")?.value;
 
     let url = "ubicacion.php";
@@ -272,115 +498,56 @@ async function cargar(){
         url += "?id_ruta=" + filtro;
     }
 
-    const res = await fetch(url);
-    const data = await res.json();
+    try{
+        const res = await fetch(url);
+        const data = await res.json();
 
-    let html = "";
+        let html = "";
+        let activos = 0;
+        let busesVisibles = {};
 
-    for(let b of data){
+        for(let b of data){
+            const id = b.id_bus;
+            const lat = parseFloat(String(b.lat).replace(',', '.'));
+            const lng = parseFloat(String(b.lng).replace(',', '.'));
 
-        const id = b.id_bus;
-        const lat = parseFloat(String(b.lat).replace(',', '.'));
-        const lng = parseFloat(String(b.lng).replace(',', '.'));
+            if(isNaN(lat) || isNaN(lng)) continue;
 
-        if(isNaN(lat)||isNaN(lng)) continue;
+            activos++;
+            busesVisibles[id] = true;
 
-        if(markers[id]){
-            markers[id].setLatLng([lat,lng]);
-        }else{
-            markers[id] = L.marker([lat,lng], {icon:busIcon})
-            .addTo(map);
+            if(markers[id]){
+                markers[id].setLatLng([lat,lng]);
+            }else{
+                markers[id] = L.marker([lat,lng], {icon:busIcon})
+                    .addTo(map)
+                    .bindPopup(`🚍 Bus ${b.patente ?? 'Sin patente'}`);
+            }
+
+            html += `
+                <div>
+                    BUS ${b.patente ?? 'Sin patente'}
+                </div>
+            `;
         }
 
-        html += `
-<div class="card"
-style="
-background:rgba(15,15,15,0.92);
-border:1px solid rgba(255,255,255,0.08);
-border-radius:20px;
-padding:16px;
-min-width:270px;
-box-shadow:0 12px 30px rgba(0,0,0,0.45);
-transition:0.3s;
-">
+        for(const id in markers){
+            if(!busesVisibles[id]){
+                map.removeLayer(markers[id]);
+                delete markers[id];
+            }
+        }
 
-    <!-- BADGE -->
-    <div style="
-        display:inline-block;
-        background:linear-gradient(90deg,#00d4ff,#00a3ff);
-        color:black;
-        font-size:10px;
-        padding:5px 12px;
-        border-radius:20px;
-        letter-spacing:1px;
-        font-weight:bold;
-        margin-bottom:12px;
-    ">
-        🚌 BUS ACTIVO
-    </div>
+        document.getElementById("totalBuses").textContent = activos;
+        document.getElementById("cards").innerHTML = html;
 
-    <!-- PATENTE -->
-    <div style="
-        font-size:18px;
-        font-weight:600;
-        margin-bottom:6px;
-        color:white;
-    ">
-        🚍
-        patente: ${b.patente ?? 'Sin patente'}
-    </div>
-
-    <!-- DUEÑO -->
-    <div style="
-        color:#aaa;
-        font-size:13px;
-        margin-bottom:6px;
-    ">
-        👤 Dueño: ${b.dueno_linea ?? 'Sin datos'}
-    </div>
-
-    <!-- ID BUS -->
-    <div style="
-        color:#666;
-        font-size:12px;
-        margin-bottom:10px;
-    ">
-        🆔 Bus ID: ${b.id_bus}
-    </div>
-
-    
-
-    <!-- BOTÓN -->
-    <button onclick="map.setView([${lat},${lng}],17)"
-    style="
-        width:100%;
-        padding:12px;
-        border-radius:30px;
-        border:none;
-        cursor:pointer;
-        font-weight:bold;
-        font-size:13px;
-        color:black;
-        background:linear-gradient(90deg,#00d4ff,#00a3ff);
-        box-shadow:0 8px 20px rgba(0,212,255,0.25);
-        transition:0.3s;
-    "
-    onmouseover="this.style.transform='scale(1.03)'"
-    onmouseout="this.style.transform='scale(1)'"
-    >
-        🚍 SEGUIR BUS
-    </button>
-
-</div>
-`;
+    }catch(error){
+        document.getElementById("cards").innerHTML = "";
     }
-
-    document.getElementById("cards").innerHTML = html;
 }
 
 cargar();
 setInterval(cargar,3000);
-
 </script>
 
 </body>
