@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 include("auth.php");
 include("../conexion.php");
+include("../helpers/passwords.php");
 
 $idRuta = (int) $_SESSION["id_ruta"];
 $adminUsuario = $_SESSION["admin"] ?? "Administrador";
@@ -120,13 +121,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($action === "create_conductor") {
         $usuario = trim($_POST["usuario"] ?? "");
         $password = trim($_POST["password"] ?? "");
+        $passwordHash = hashUserPassword($password);
         $nombre = trim($_POST["nombre"] ?? "");
         $estado = $_POST["estado"] ?? "activo";
 
         $stmt = sqlsrv_query(
             $conn,
             "INSERT INTO conductores (usuario, password, nombre, estado, id_ruta, fecha_creacion) VALUES (?, ?, ?, ?, ?, GETDATE())",
-            [$usuario, $password, $nombre, $estado, $idRuta]
+            [$usuario, $passwordHash, $nombre, $estado, $idRuta]
         );
 
         flash($stmt ? "success" : "error", $stmt ? "Conductor creado correctamente." : "No se pudo crear el conductor.");
@@ -141,10 +143,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $estado = $_POST["estado"] ?? "activo";
 
         if ($password !== "") {
+            $passwordHash = hashUserPassword($password);
+
             $stmt = sqlsrv_query(
                 $conn,
                 "UPDATE conductores SET usuario = ?, password = ?, nombre = ?, estado = ?, fecha_baja = CASE WHEN ? = 'inactivo' THEN GETDATE() ELSE NULL END WHERE id = ? AND id_ruta = ?",
-                [$usuario, $password, $nombre, $estado, $estado, $idConductor, $idRuta]
+                [$usuario, $passwordHash, $nombre, $estado, $estado, $idConductor, $idRuta]
             );
         } else {
             $stmt = sqlsrv_query(
@@ -549,3 +553,4 @@ $stats = [
 </main>
 </body>
 </html>
+

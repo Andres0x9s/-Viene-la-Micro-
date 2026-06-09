@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 session_start();
 include("../conexion.php");
+include("../helpers/passwords.php");
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: login.php");
@@ -17,7 +18,7 @@ $sql = "SELECT id_admin, usuario, password, id_ruta
 $stmt = sqlsrv_query($conn, $sql, [$usuario]);
 $admin = $stmt ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC) : null;
 
-if ($admin && $password === $admin["password"]) {
+if ($admin && verifyUserPassword($conn, "administradores", "id_admin", $admin["id_admin"], $password, $admin["password"])) {
     $_SESSION["admin_id"] = $admin["id_admin"];
     $_SESSION["admin"] = $admin["usuario"];
     $_SESSION["id_ruta"] = $admin["id_ruta"];
@@ -29,3 +30,4 @@ if ($admin && $password === $admin["password"]) {
 $_SESSION["admin_login_error"] = "Usuario o contraseña incorrectos.";
 header("Location: login.php");
 exit;
+

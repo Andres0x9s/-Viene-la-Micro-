@@ -1,6 +1,7 @@
 ﻿<?php
 session_start();
 include("../conexion.php");
+include("../helpers/passwords.php");
 
 /*
 Flujo correcto:
@@ -35,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if (($conductor["estado"] ?? "") !== "activo") {
             $error = "Este conductor se encuentra inactivo.";
-        } elseif ($password === $conductor["password"]) {
+        } elseif (verifyUserPassword($conn, "conductores", "id", $conductor["id"], $password, $conductor["password"])) {
 
             if (empty($conductor["id_ruta"])) {
                 $error = "Este conductor no tiene una línea asignada.";
