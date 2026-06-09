@@ -373,6 +373,7 @@ $filtroRecorrido = $_GET["recorrido"] ?? "";
 
         if(
           !href ||
+          !href.includes("mapa.html") ||
           href.startsWith("#") ||
           href.startsWith("javascript:") ||
           href.startsWith("mailto:") ||

@@ -200,7 +200,7 @@ select.btn{
 
 .quick-stats{
     display:grid;
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:repeat(3,1fr);
     gap:12px;
     margin-top:18px;
 }
@@ -257,6 +257,36 @@ select.btn{
 
 .active-buses::-webkit-scrollbar{
     display:none;
+}
+
+.map-alerts{
+    position:absolute;
+    right:22px;
+    bottom:112px;
+    z-index:45;
+    max-width:min(360px, calc(100vw - 44px));
+    pointer-events:none;
+}
+
+.map-alert{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    color:#fde68a;
+    background:rgba(2,6,23,.88);
+    backdrop-filter:blur(18px);
+    border:1px solid rgba(250,204,21,.32);
+    border-radius:16px;
+    padding:13px 15px;
+    font-size:13px;
+    font-weight:800;
+    line-height:1.35;
+    box-shadow:0 14px 36px rgba(0,0,0,.36);
+}
+
+.map-alert i{
+    margin-top:2px;
+    color:#facc15;
 }
 
 .bus-mini-card{
@@ -347,6 +377,24 @@ select.btn{
     box-shadow:0 0 0 10px rgba(37,244,255,.18), 0 0 26px rgba(37,244,255,.8);
 }
 
+.paradero-dot{
+    width:32px;
+    height:32px;
+    display:grid;
+    place-items:center;
+    border-radius:50% 50% 50% 8px;
+    transform:rotate(-45deg);
+    color:#020617;
+    background:linear-gradient(135deg,#facc15,#f97316);
+    border:2px solid white;
+    box-shadow:0 10px 24px rgba(0,0,0,.32), 0 0 20px rgba(250,204,21,.35);
+}
+
+.paradero-dot i{
+    transform:rotate(45deg);
+    font-size:14px;
+}
+
 @media(max-width:950px){
     .topbar{
         top:14px;
@@ -381,6 +429,13 @@ select.btn{
         left:12px;
         right:12px;
         bottom:14px;
+    }
+
+    .map-alerts{
+        left:12px;
+        right:12px;
+        bottom:104px;
+        max-width:none;
     }
 
     .bus-mini-card{

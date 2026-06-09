@@ -100,6 +100,47 @@ h1{
     line-height:1.6;
 }
 
+.error-message{
+    color:#fecaca;
+    background:rgba(239,68,68,.12);
+    border-color:rgba(239,68,68,.34);
+    margin-bottom:18px;
+}
+
+.finish-form{
+    display:grid;
+    gap:10px;
+}
+
+.finish-form label{
+    color:#cbd5e1;
+    font-size:13px;
+    font-weight:900;
+}
+
+.finish-form textarea{
+    width:100%;
+    min-height:140px;
+    resize:vertical;
+    padding:15px 16px;
+    border-radius:18px;
+    border:1px solid rgba(255,255,255,.1);
+    outline:none;
+    color:white;
+    background:rgba(255,255,255,.08);
+    font-family:inherit;
+    font-size:14px;
+    line-height:1.6;
+}
+
+.finish-form textarea::placeholder{
+    color:#64748b;
+}
+
+.finish-form small{
+    color:#94a3b8;
+}
+
 .actions-row{
     display:grid;
     grid-template-columns:1fr 1fr;

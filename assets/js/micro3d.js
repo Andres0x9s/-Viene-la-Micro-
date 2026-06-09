@@ -10,6 +10,37 @@ if (canvas && wrapper) {
 
   const scene = new THREE.Scene();
 
+  const getResponsiveScene = () => {
+    const width = window.innerWidth || wrapper.clientWidth || 1;
+    const height = window.innerHeight || wrapper.clientHeight || 1;
+    const aspect = width / height;
+    const compact = width <= 780;
+    const tiny = width <= 460;
+    const narrow = aspect < 0.82;
+
+    return {
+      modelTargetDimension: tiny ? 13.8 : compact ? 15.4 : narrow ? 16.2 : 18.8,
+      baseX: compact ? 0.2 : narrow ? 0.65 : 2.35,
+      baseY: compact ? 1.35 : 2.15,
+      baseZ: compact ? 0.4 : 1,
+      introX: compact ? 18 : 28,
+      introY: compact ? -0.85 : -1.05,
+      introZ: compact ? -6 : -7,
+      crashReadyY: compact ? 0.08 : 0.35,
+      crashReadyZ: compact ? -2.4 : -1.6,
+      crashImpactY: compact ? 0.12 : 0.75,
+      crashImpactZ: compact ? 18.6 : 21.5,
+      crashScale: tiny ? 4.35 : compact ? 4.9 : narrow ? 5.35 : 6.35,
+      cameraIdleY: compact ? 2.55 : 3.1,
+      cameraIdleZ: compact ? 29 : 26,
+      cameraCrashY: compact ? 1.7 : 2.45,
+      cameraCrashZ: compact ? 25.4 : 24.2,
+      lookAtY: compact ? 0.24 : 0
+    };
+  };
+
+  let view = getResponsiveScene();
+
   const camera = new THREE.PerspectiveCamera(
     38,
     1,
@@ -17,7 +48,7 @@ if (canvas && wrapper) {
     1000
   );
 
-  camera.position.set(0, 3.1, 26);
+  camera.position.set(0, view.cameraIdleY, view.cameraIdleZ);
 
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -72,14 +103,29 @@ if (canvas && wrapper) {
 
   let bus = null;
   let baseScale = 1;
+  let modelMaxDimension = 1;
   let modelReady = false;
 
-  const basePosition = new THREE.Vector3(2.35, 2.15, 1);
+  const basePosition = new THREE.Vector3();
   const baseRotation = new THREE.Euler(0.02, -2.35, 0);
-  const introStartPosition = new THREE.Vector3(28, -1.05, -7);
+  const introStartPosition = new THREE.Vector3();
   const crashFrontRotation = new THREE.Euler(0, -Math.PI / 2, 0);
-  const crashReadyPosition = new THREE.Vector3(0, 0.35, -1.6);
-  const crashImpactPosition = new THREE.Vector3(0, 0.75, 21.5);
+  const crashReadyPosition = new THREE.Vector3();
+  const crashImpactPosition = new THREE.Vector3();
+
+  const updateResponsiveTargets = () => {
+    view = getResponsiveScene();
+    basePosition.set(view.baseX, view.baseY, view.baseZ);
+    introStartPosition.set(view.introX, view.introY, view.introZ);
+    crashReadyPosition.set(0, view.crashReadyY, view.crashReadyZ);
+    crashImpactPosition.set(0, view.crashImpactY, view.crashImpactZ);
+
+    if (modelReady && modelMaxDimension > 0) {
+      baseScale = view.modelTargetDimension / modelMaxDimension;
+    }
+  };
+
+  updateResponsiveTargets();
 
   const intro = {
     active: true,
@@ -118,14 +164,13 @@ if (canvas && wrapper) {
 
       bus.position.sub(center);
 
-      const maxDimension = Math.max(
+      modelMaxDimension = Math.max(
         size.x,
         size.y,
         size.z
       );
 
-      const targetDimension = 18.8;
-      baseScale = targetDimension / maxDimension;
+      baseScale = view.modelTargetDimension / modelMaxDimension;
       bus.scale.setScalar(baseScale);
 
       bus.rotation.copy(baseRotation);
@@ -157,6 +202,8 @@ if (canvas && wrapper) {
   );
 
   const resize = () => {
+
+    updateResponsiveTargets();
 
     const width = wrapper.clientWidth;
     const height = wrapper.clientHeight;
@@ -257,13 +304,13 @@ if (canvas && wrapper) {
         bus.position.z = THREE.MathUtils.lerp(readyZ, crashImpactPosition.z, drive);
 
         const alignScale = THREE.MathUtils.lerp(1, 1.18, align);
-        const driveScale = THREE.MathUtils.lerp(alignScale, 6.35, drive);
+        const driveScale = THREE.MathUtils.lerp(alignScale, view.crashScale, drive);
         bus.scale.setScalar(baseScale * driveScale);
         crashLight.intensity = 1.5 + 22 * drive;
 
         camera.position.x += (0 - camera.position.x) * 0.08;
-        camera.position.y += (2.45 - camera.position.y) * 0.08;
-        camera.position.z += (24.2 - camera.position.z) * 0.055;
+        camera.position.y += (view.cameraCrashY - camera.position.y) * 0.08;
+        camera.position.z += (view.cameraCrashZ - camera.position.z) * 0.055;
 
         if (raw >= 1 && crash.url) {
           window.location.href = crash.url;
@@ -313,16 +360,16 @@ if (canvas && wrapper) {
           0.025;
 
         camera.position.y +=
-          (3.1 - pointer.y * 0.28 - camera.position.y) *
+          (view.cameraIdleY - pointer.y * 0.28 - camera.position.y) *
           0.025;
 
         camera.position.z +=
-          (26 - camera.position.z) *
+          (view.cameraIdleZ - camera.position.z) *
           0.025;
       }
     }
 
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, view.lookAtY, 0);
 
     renderer.render(
       scene,

@@ -80,10 +80,10 @@ $usuario = $_SESSION["conductor_usuario"] ?? "Conductor";
     </div>
 
     <div class="actions-row">
-        <a href="finalizar_viaje.php" class="logout finish" onclick="return confirm('¿Finalizar este viaje? Se calcularán los kilómetros recorridos.');">
+        <a href="finalizar_viaje.php" class="logout finish">
             Finalizar viaje
         </a>
-        <a href="logout.php" class="logout" onclick="return confirm('Si cierras sesión sin finalizar, el viaje quedará activo. ¿Continuar?');">
+        <a href="logout.php" class="logout" onclick="return confirm('Si cierras sesión sin finalizar manualmente, el sistema cerrará el viaje automáticamente. ¿Continuar?');">
             Cerrar sesión
         </a>
     </div>

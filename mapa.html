@@ -69,6 +69,11 @@
             <strong>3s</strong>
             <span>Actualización</span>
         </div>
+
+        <div class="stat">
+            <strong id="totalParaderos">0</strong>
+            <span>Paraderos</span>
+        </div>
     </div>
 </section>
 
@@ -78,6 +83,7 @@
 </button>
 
 <div id="activeBuses" class="active-buses"></div>
+<div id="mapAlerts" class="map-alerts" aria-live="polite"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -105,9 +111,38 @@ const userIcon = L.divIcon({
     iconAnchor:[12,12]
 });
 
+const paraderoIcon = L.divIcon({
+    className:"",
+    html:`<div class="paradero-dot"><i class="fa-solid fa-location-dot"></i></div>`,
+    iconSize:[32,32],
+    iconAnchor:[16,32],
+    popupAnchor:[0,-28]
+});
+
 let markers = {};
+let paraderoMarkers = {};
 let userMarker = null;
 let primeraCarga = true;
+let primeraCargaParaderos = true;
+
+function mostrarAlertaMapa(mensaje){
+    const contenedor = document.getElementById("mapAlerts");
+    if(!contenedor) return;
+
+    contenedor.innerHTML = `
+        <div class="map-alert">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>${mensaje}</span>
+        </div>
+    `;
+}
+
+function limpiarAlertaMapa(){
+    const contenedor = document.getElementById("mapAlerts");
+    if(contenedor){
+        contenedor.innerHTML = "";
+    }
+}
 
 function volver(){
     window.location.href = "index.php";
@@ -140,6 +175,7 @@ function miUbicacion(){
 
 async function cargar(){
     const filtro = document.getElementById("filtro")?.value;
+    cargarParaderos(filtro);
     let url = "ubicacion.php";
 
     if(filtro){
@@ -232,6 +268,93 @@ async function cargar(){
         `;
         document.getElementById("totalBuses").textContent = "0";
         console.error(error);
+    }
+}
+
+async function cargarParaderos(filtro = ""){
+    let url = "paraderos.php";
+
+    if(filtro){
+        url += "?id_ruta=" + encodeURIComponent(filtro);
+    }
+
+    url += (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+
+    try{
+        const res = await fetch(url);
+
+        if(!res.ok){
+            throw new Error("Error HTTP " + res.status);
+        }
+
+        const data = await res.json();
+
+        if(!Array.isArray(data)){
+            throw new Error(data?.error || "paraderos.php no devolvió una lista de paraderos");
+        }
+
+        const visibles = {};
+        const bounds = [];
+        let total = 0;
+
+        for(const p of data){
+            const id = p.id_paradero;
+            const lat = parseFloat(String(p.lat).replace(',', '.'));
+            const lng = parseFloat(String(p.lng).replace(',', '.'));
+
+            if(isNaN(lat) || isNaN(lng)) continue;
+
+            visibles[id] = true;
+            total++;
+            bounds.push([lat,lng]);
+
+            const popup = `
+                <strong>📍 ${p.nombre ?? "Paradero"}</strong><br>
+                Ruta: ${p.nombre_ruta ?? "Sin ruta"}
+            `;
+
+            if(paraderoMarkers[id]){
+                paraderoMarkers[id].setLatLng([lat,lng]);
+                paraderoMarkers[id].setPopupContent(popup);
+            }else{
+                paraderoMarkers[id] = L.marker([lat,lng], {icon:paraderoIcon})
+                    .addTo(map)
+                    .bindPopup(popup);
+            }
+        }
+
+        for(const id in paraderoMarkers){
+            if(!visibles[id]){
+                map.removeLayer(paraderoMarkers[id]);
+                delete paraderoMarkers[id];
+            }
+        }
+
+        const totalParaderos = document.getElementById("totalParaderos");
+        if(totalParaderos){
+            totalParaderos.textContent = total;
+        }
+
+        if(total === 0){
+            mostrarAlertaMapa("No hay paraderos activos para este filtro.");
+        }else{
+            limpiarAlertaMapa();
+        }
+
+        if(primeraCargaParaderos && bounds.length > 0 && Object.keys(markers).length === 0){
+            map.fitBounds(bounds, {
+                padding:[80,80],
+                maxZoom:16
+            });
+            primeraCargaParaderos = false;
+        }
+    }catch(error){
+        console.error("No se pudieron cargar paraderos:", error);
+        mostrarAlertaMapa("No se pudieron cargar los paraderos. Revisa paraderos.php para ver la respuesta.");
+        const totalParaderos = document.getElementById("totalParaderos");
+        if(totalParaderos){
+            totalParaderos.textContent = "0";
+        }
     }
 }
 
