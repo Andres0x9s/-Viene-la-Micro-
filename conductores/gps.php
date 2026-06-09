@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 
 if (!isset($_SESSION["conductor_id"])) {
@@ -26,151 +26,7 @@ $usuario = $_SESSION["conductor_usuario"] ?? "Conductor";
 
 <link rel="icon" type="image/png" href="../busicono.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
-
-<style>
-*{box-sizing:border-box}
-
-body{
-    margin:0;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#020617;
-    color:white;
-    font-family:"Poppins",sans-serif;
-    overflow:hidden;
-}
-
-body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    background:
-        radial-gradient(circle at 15% 20%, rgba(37,244,255,.22), transparent 30%),
-        radial-gradient(circle at 85% 80%, rgba(0,200,232,.16), transparent 35%);
-}
-
-.gps-card{
-    position:relative;
-    z-index:2;
-    width:92%;
-    max-width:560px;
-    padding:36px;
-    border-radius:32px;
-    background:rgba(15,23,42,.78);
-    border:1px solid rgba(255,255,255,.1);
-    backdrop-filter:blur(20px);
-    box-shadow:0 25px 80px rgba(0,0,0,.5);
-}
-
-.status{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    padding:8px 14px;
-    border-radius:999px;
-    background:rgba(34,197,94,.12);
-    border:1px solid rgba(34,197,94,.35);
-    color:#86efac;
-    font-size:12px;
-    font-weight:900;
-    margin-bottom:20px;
-}
-
-.dot{
-    width:9px;
-    height:9px;
-    border-radius:50%;
-    background:#22c55e;
-    box-shadow:0 0 18px #22c55e;
-}
-
-h1{
-    margin:0 0 8px;
-    font-size:34px;
-}
-
-.subtitle{
-    color:#94a3b8;
-    margin-bottom:28px;
-}
-
-.info-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:14px;
-    margin-bottom:24px;
-}
-
-.box{
-    background:rgba(255,255,255,.07);
-    border:1px solid rgba(255,255,255,.1);
-    border-radius:20px;
-    padding:18px;
-}
-
-.box small{
-    color:#94a3b8;
-    display:block;
-    margin-bottom:8px;
-}
-
-.box strong{
-    font-size:20px;
-}
-
-.message{
-    padding:16px;
-    border-radius:18px;
-    background:rgba(37,244,255,.1);
-    border:1px solid rgba(37,244,255,.25);
-    color:#cffafe;
-    font-size:14px;
-    line-height:1.6;
-}
-
-.actions-row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-    margin-top:22px;
-}
-
-.logout{
-    display:block;
-    text-align:center;
-    padding:14px;
-    border-radius:999px;
-    color:white;
-    text-decoration:none;
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.1);
-    font-weight:800;
-}
-
-.finish{
-    background:linear-gradient(135deg,#25f4ff,#00c8e8);
-    color:#020617;
-    border:none;
-}
-
-.finish:hover{
-    color:#020617;
-    transform:translateY(-2px);
-}
-
-.logout:hover{
-    border-color:rgba(37,244,255,.45);
-    color:#25f4ff;
-}
-
-@media(max-width:600px){
-    .info-grid, .actions-row{
-        grid-template-columns:1fr;
-    }
-}
-</style>
+<link rel="stylesheet" href="../assets/css/gps.css">
 </head>
 
 <body>
@@ -200,7 +56,7 @@ h1{
 
         <div class="box">
             <small>Dirección</small>
-            <strong style="font-size:15px;"><?= htmlspecialchars($direccion) ?></strong>
+            <strong class="direction-value"><?= htmlspecialchars($direccion) ?></strong>
         </div>
 
         <div class="box">
@@ -303,3 +159,5 @@ if(navigator.geolocation){
 
 </body>
 </html>
+
+

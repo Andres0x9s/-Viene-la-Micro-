@@ -1,4 +1,4 @@
-:root{
+﻿:root{
   --bg:#050713;
   --panel:rgba(255,255,255,.075);
   --panel-strong:rgba(255,255,255,.12);
@@ -227,3 +227,4 @@ body.bus-crashing .footer{
 body.bus-crashing .bus-transition{
   z-index:9999;
 }
+

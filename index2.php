@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include("conexion.php");
 ?>
 
@@ -11,20 +11,7 @@ include("conexion.php");
 <title>Viene La Micro</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-
-html{
-    scroll-behavior:smooth;
-}
-
-body{
-    background:#0b0b0b;
-    overflow-x:hidden;
-}
-
-</style>
-
+<link rel="stylesheet" href="assets/css/index2.css">
 </head>
 
 <body class="text-white font-sans">
@@ -356,3 +343,4 @@ while($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)){
 
 </body>
 </html>
+

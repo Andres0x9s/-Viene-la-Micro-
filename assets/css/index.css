@@ -1,0 +1,105 @@
+﻿html{scroll-behavior:smooth;}
+
+    .data-section{
+      padding:110px 7%;
+      position:relative;
+      z-index:5;
+    }
+
+    .data-card{
+      background:rgba(15,23,42,.72);
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:34px;
+      padding:42px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 24px 80px rgba(0,0,0,.35);
+    }
+
+    .filter-box{
+      margin:32px 0 10px;
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .filter-select{
+      min-width:280px;
+      padding:15px 18px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
+      color:white;
+      font-family:inherit;
+      font-weight:700;
+      outline:none;
+    }
+
+    .filter-select option{
+      background:#020617;
+      color:white;
+    }
+
+    .routes-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:24px;
+      margin-top:45px;
+    }
+
+    .route-card{
+      background:linear-gradient(145deg,rgba(15,23,42,.82),rgba(2,6,23,.84));
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:30px;
+      padding:32px;
+      transition:.3s ease;
+      box-shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+
+    .route-card:hover{
+      transform:translateY(-8px);
+      border-color:rgba(37,244,255,.45);
+      box-shadow:0 22px 70px rgba(37,244,255,.12);
+    }
+
+    .route-card .line-owner{
+      color:#25f4ff;
+      text-transform:uppercase;
+      letter-spacing:.25em;
+      font-size:11px;
+      font-weight:800;
+      margin-bottom:16px;
+    }
+
+    .route-card h3{
+      color:white;
+      font-size:30px;
+      margin-bottom:22px;
+    }
+
+    .route-card p{
+      color:#cbd5e1;
+      margin:12px 0;
+      font-size:15px;
+    }
+
+    .time-big{
+      font-size:42px;
+      color:#25f4ff;
+      font-weight:800;
+      margin:10px 0 16px;
+    }
+
+    .empty-message{
+      color:#94a3b8;
+      font-size:20px;
+      margin-top:25px;
+    }
+
+    @media(max-width:950px){
+      .routes-grid{grid-template-columns:1fr;}
+      .data-section{padding:80px 5%;}
+      .data-card{padding:28px;}
+      .filter-select{width:100%; min-width:0;}
+    }
+

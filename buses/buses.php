@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 include ("../conexion.php");
 ?>
 
@@ -7,49 +7,7 @@ include ("../conexion.php");
 <head>
     <meta charset="UTF-8">
     <title>Menú de Buses</title>
-
-    <style>
-        body{
-            font-family: Arial;
-            background:#f4f4f4;
-        }
-
-        .container{
-            width: 80%;
-            margin: auto;
-        }
-
-        .card{
-            background: white;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 10px;
-            box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-        }
-
-        .ruta{
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .info{
-            margin: 5px 0;
-        }
-
-        button{
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        button:hover{
-            background: #2980b9;
-        }
-    </style>
+    <link rel="stylesheet" href="../assets/css/buses.css">
 </head>
 
 <body>
@@ -105,3 +63,5 @@ while($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)){
 
 </body>
 </html>
+
+

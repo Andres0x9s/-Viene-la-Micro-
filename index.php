@@ -1,9 +1,10 @@
-<?php
+﻿<?php
 session_start();
 include("conexion.php");
 
-$logged = isset($_SESSION['usuario']);
+$adminLogged = isset($_SESSION["admin"]);
 $filtroDireccion = $_GET["direccion"] ?? "";
+$filtroRecorrido = $_GET["recorrido"] ?? "";
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -19,114 +20,6 @@ $filtroDireccion = $_GET["direccion"] ?? "";
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="assets/css/style.css">
-
-  <style>
-    html{scroll-behavior:smooth;}
-
-    .data-section{
-      padding:110px 7%;
-      position:relative;
-      z-index:5;
-    }
-
-    .data-card{
-      background:rgba(15,23,42,.72);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:34px;
-      padding:42px;
-      backdrop-filter:blur(18px);
-      box-shadow:0 24px 80px rgba(0,0,0,.35);
-    }
-
-    .filter-box{
-      margin:32px 0 10px;
-      display:flex;
-      gap:14px;
-      flex-wrap:wrap;
-      align-items:center;
-    }
-
-    .filter-select{
-      min-width:280px;
-      padding:15px 18px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.08);
-      color:white;
-      font-family:inherit;
-      font-weight:700;
-      outline:none;
-    }
-
-    .filter-select option{
-      background:#020617;
-      color:white;
-    }
-
-    .routes-grid{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:24px;
-      margin-top:45px;
-    }
-
-    .route-card{
-      background:linear-gradient(145deg,rgba(15,23,42,.82),rgba(2,6,23,.84));
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:30px;
-      padding:32px;
-      transition:.3s ease;
-      box-shadow:0 18px 50px rgba(0,0,0,.28);
-    }
-
-    .route-card:hover{
-      transform:translateY(-8px);
-      border-color:rgba(37,244,255,.45);
-      box-shadow:0 22px 70px rgba(37,244,255,.12);
-    }
-
-    .route-card .line-owner{
-      color:#25f4ff;
-      text-transform:uppercase;
-      letter-spacing:.25em;
-      font-size:11px;
-      font-weight:800;
-      margin-bottom:16px;
-    }
-
-    .route-card h3{
-      color:white;
-      font-size:30px;
-      margin-bottom:22px;
-    }
-
-    .route-card p{
-      color:#cbd5e1;
-      margin:12px 0;
-      font-size:15px;
-    }
-
-    .time-big{
-      font-size:42px;
-      color:#25f4ff;
-      font-weight:800;
-      margin:10px 0 16px;
-    }
-
-    .empty-message{
-      color:#94a3b8;
-      font-size:20px;
-      margin-top:25px;
-    }
-
-    @media(max-width:950px){
-      .routes-grid{grid-template-columns:1fr;}
-      .data-section{padding:80px 5%;}
-      .data-card{padding:28px;}
-      .filter-select{width:100%; min-width:0;}
-    }
-  </style>
-
   <script type="importmap">
   {
     "imports": {
@@ -135,6 +28,7 @@ $filtroDireccion = $_GET["direccion"] ?? "";
     }
   }
   </script>
+  <link rel="stylesheet" href="assets/css/index.css">
 </head>
 
 <body>
@@ -158,14 +52,16 @@ $filtroDireccion = $_GET["direccion"] ?? "";
         <li><a href="#recorridos">Recorridos</a></li>
         <li><a href="#proximo-bus">Horarios</a></li>
         <li><a href="mapa.html">Mapa</a></li>
+        <li><a href="admin/login.php">Admin</a></li>
       </ul>
 
       <div class="auth-buttons">
-        <?php if($logged): ?>
+        <?php if($adminLogged): ?>
           <a href="admin/dashboard.php" class="btn btn-ghost">Panel</a>
           <a href="admin/logout.php" class="btn btn-primary">Salir</a>
         <?php else: ?>
           <a href="conductores/login.php" class="btn btn-ghost">Conductor</a>
+          <a href="admin/login.php" class="btn btn-ghost">Admin</a>
           <a href="#recorridos" class="btn btn-primary">Ver Buses</a>
         <?php endif; ?>
       </div>
@@ -194,6 +90,10 @@ $filtroDireccion = $_GET["direccion"] ?? "";
 
           <a href="conductores/login.php" class="btn btn-glass btn-large">
             Soy conductor <i class="fa-solid fa-id-card"></i>
+          </a>
+
+          <a href="admin/login.php" class="btn btn-glass btn-large">
+            Panel admin <i class="fa-solid fa-user-shield"></i>
           </a>
         </div>
 
@@ -343,8 +243,39 @@ $filtroDireccion = $_GET["direccion"] ?? "";
         <p>Consulta buses disponibles, horarios de salida, líneas de recorrido y monitoreo en tiempo real.</p>
       </div>
 
+      <form method="GET" action="index.php#recorridos" class="filter-box">
+        <select name="recorrido" class="filter-select" onchange="this.form.submit()">
+          <option value="">Todos los recorridos</option>
+
+          <?php
+          $sqlRecorridosFiltro = "SELECT DISTINCT direccion FROM horarios ORDER BY direccion";
+          $resRecorridosFiltro = sqlsrv_query($conn, $sqlRecorridosFiltro);
+
+          if($resRecorridosFiltro){
+            while($rec = sqlsrv_fetch_array($resRecorridosFiltro, SQLSRV_FETCH_ASSOC)){
+              $recorrido = $rec["direccion"];
+              $selectedRecorrido = ($filtroRecorrido === $recorrido) ? "selected" : "";
+          ?>
+            <option value="<?= htmlspecialchars($recorrido) ?>" <?= $selectedRecorrido ?>>
+              <?= htmlspecialchars($recorrido) ?>
+            </option>
+          <?php
+            }
+          }
+          ?>
+        </select>
+
+        <?php if($filtroRecorrido): ?>
+          <a href="index.php#recorridos" class="btn btn-glass">
+            Limpiar filtro
+          </a>
+        <?php endif; ?>
+      </form>
+
       <div class="routes-grid">
         <?php
+        $paramsRecorridos = [];
+
         $sql = "SELECT 
                     h.direccion,
                     r.inicio,
@@ -354,13 +285,21 @@ $filtroDireccion = $_GET["direccion"] ?? "";
                     h.hora_salida
                 FROM buses b
                 INNER JOIN rutas r ON b.id_ruta = r.id_ruta
-                INNER JOIN horarios h ON b.id_bus = h.id_bus
-                ORDER BY r.nombre_ruta, h.hora_salida";
+                INNER JOIN horarios h ON b.id_bus = h.id_bus";
 
-        $resultado = sqlsrv_query($conn, $sql);
+        if($filtroRecorrido !== ""){
+          $sql .= " WHERE h.direccion = ?";
+          $paramsRecorridos[] = $filtroRecorrido;
+        }
+
+        $sql .= " ORDER BY r.nombre_ruta, h.hora_salida";
+
+        $resultado = sqlsrv_query($conn, $sql, $paramsRecorridos);
+        $hayRecorridos = false;
 
         if($resultado){
           while($row = sqlsrv_fetch_array($resultado, SQLSRV_FETCH_ASSOC)){
+            $hayRecorridos = true;
         ?>
 
         <article class="route-card">
@@ -381,11 +320,14 @@ $filtroDireccion = $_GET["direccion"] ?? "";
 
         <?php
           }
-        } else {
+        }
+
+        if(!$hayRecorridos){
         ?>
 
         <div class="empty-message">
-          No se pudieron cargar los recorridos.
+          No hay recorridos disponibles
+          <?= $filtroRecorrido ? "para " . htmlspecialchars($filtroRecorrido) : "" ?>.
         </div>
 
         <?php } ?>
@@ -461,3 +403,4 @@ $filtroDireccion = $_GET["direccion"] ?? "";
   <script type="module" src="assets/js/micro3d.js"></script>
 </body>
 </html>
+
