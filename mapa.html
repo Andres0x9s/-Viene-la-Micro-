@@ -84,6 +84,7 @@
 
 <div id="activeBuses" class="active-buses"></div>
 <div id="mapAlerts" class="map-alerts" aria-live="polite"></div>
+<div id="etaPanel" class="eta-panel" aria-live="polite"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -124,6 +125,181 @@ let paraderoMarkers = {};
 let userMarker = null;
 let primeraCarga = true;
 let primeraCargaParaderos = true;
+let busesActivos = [];
+let paraderosData = {};
+let paraderoSeleccionadoId = null;
+
+function escaparHtml(valor){
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function distanciaKm(lat1, lng1, lat2, lng2){
+    const radioTierra = 6371;
+    const gradosARadianes = Math.PI / 180;
+    const dLat = (lat2 - lat1) * gradosARadianes;
+    const dLng = (lng2 - lng1) * gradosARadianes;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * gradosARadianes) *
+        Math.cos(lat2 * gradosARadianes) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+
+    return radioTierra * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatearDistancia(km){
+    if(km < 1){
+        return `${Math.round(km * 1000)} m`;
+    }
+
+    return `${km.toFixed(1).replace(".", ",")} km`;
+}
+
+function obtenerLlegadaParadero(paradero){
+    const busesRuta = busesActivos.filter(bus => {
+        const lat = parseFloat(bus.lat);
+        const lng = parseFloat(bus.lng);
+
+        return String(bus.id_ruta) === String(paradero.id_ruta) && !isNaN(lat) && !isNaN(lng);
+    });
+
+    if(busesRuta.length === 0){
+        return {
+            disponible:false,
+            mensaje:"No hay micros activas para esta ruta."
+        };
+    }
+
+    let mejor = null;
+
+    for(const bus of busesRuta){
+        const distancia = distanciaKm(
+            parseFloat(bus.lat),
+            parseFloat(bus.lng),
+            parseFloat(paradero.lat),
+            parseFloat(paradero.lng)
+        );
+
+        if(!mejor || distancia < mejor.distancia){
+            mejor = {bus, distancia};
+        }
+    }
+
+    const velocidadActual = parseFloat(String(mejor.bus.velocidad ?? "").replace(",", "."));
+    const usaVelocidadActual = !isNaN(velocidadActual) && velocidadActual >= 5;
+    const velocidadEstimacion = usaVelocidadActual ? velocidadActual : 25;
+    const minutos = Math.max(1, Math.ceil((mejor.distancia / velocidadEstimacion) * 60));
+
+    return {
+        disponible:true,
+        bus:mejor.bus,
+        distancia:mejor.distancia,
+        minutos,
+        velocidadEstimacion,
+        usaVelocidadActual
+    };
+}
+
+function crearResumenLlegada(paradero){
+    const llegada = obtenerLlegadaParadero(paradero);
+
+    if(!llegada.disponible){
+        return `<div class="eta-empty">${escaparHtml(llegada.mensaje)}</div>`;
+    }
+
+    return `
+        <div class="eta-mini">
+            <strong>${llegada.minutos} min aprox.</strong>
+            <span>Micro ${escaparHtml(llegada.bus.patente ?? "sin patente")} · ${formatearDistancia(llegada.distancia)}</span>
+        </div>
+    `;
+}
+
+function crearPopupParadero(paradero){
+    const id = Number(paradero.id_paradero);
+
+    return `
+        <div class="paradero-popup">
+            <strong>📍 ${escaparHtml(paradero.nombre || "Paradero")}</strong>
+            <span>Ruta: ${escaparHtml(paradero.nombre_ruta || "Sin ruta")}</span>
+            ${crearResumenLlegada(paradero)}
+            <button type="button" class="popup-eta-btn" onclick="seleccionarParadero(${id})">
+                Ver llegada
+            </button>
+        </div>
+    `;
+}
+
+function actualizarPanelLlegada(){
+    const panel = document.getElementById("etaPanel");
+    if(!panel) return;
+
+    const paradero = paraderosData[paraderoSeleccionadoId];
+    if(!paradero){
+        panel.classList.remove("show");
+        panel.innerHTML = "";
+        return;
+    }
+
+    const llegada = obtenerLlegadaParadero(paradero);
+
+    if(!llegada.disponible){
+        panel.innerHTML = `
+            <button class="eta-close" onclick="cerrarLlegada()" aria-label="Cerrar llegada">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <span class="eta-label">Paradero seleccionado</span>
+            <h2>${escaparHtml(paradero.nombre)}</h2>
+            <p>${escaparHtml(llegada.mensaje)}</p>
+        `;
+    }else{
+        panel.innerHTML = `
+            <button class="eta-close" onclick="cerrarLlegada()" aria-label="Cerrar llegada">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <span class="eta-label">Próxima micro</span>
+            <h2>${escaparHtml(paradero.nombre)}</h2>
+            <div class="eta-time">${llegada.minutos} min</div>
+            <div class="eta-detail">
+                <span><i class="fa-solid fa-bus-simple"></i> ${escaparHtml(llegada.bus.patente ?? "Sin patente")}</span>
+                <span><i class="fa-solid fa-route"></i> ${formatearDistancia(llegada.distancia)}</span>
+                <span><i class="fa-solid fa-gauge-high"></i> ${Math.round(llegada.velocidadEstimacion)} km/h ${llegada.usaVelocidadActual ? "actual" : "promedio"}</span>
+            </div>
+        `;
+    }
+
+    panel.classList.add("show");
+}
+
+function seleccionarParadero(id){
+    paraderoSeleccionadoId = String(id);
+    actualizarPanelLlegada();
+
+    if(paraderoMarkers[id]){
+        paraderoMarkers[id].openPopup();
+    }
+}
+
+function cerrarLlegada(){
+    paraderoSeleccionadoId = null;
+    actualizarPanelLlegada();
+}
+
+function refrescarPopupsParaderos(){
+    for(const id in paraderoMarkers){
+        if(paraderosData[id]){
+            paraderoMarkers[id].setPopupContent(crearPopupParadero(paraderosData[id]));
+        }
+    }
+
+    actualizarPanelLlegada();
+}
 
 function mostrarAlertaMapa(mensaje){
     const contenedor = document.getElementById("mapAlerts");
@@ -196,6 +372,7 @@ async function cargar(){
         let cardsHtml = "";
         let activos = 0;
         let busesVisibles = {};
+        let busesActualizados = [];
         let bounds = [];
 
         for(let b of data){
@@ -207,6 +384,7 @@ async function cargar(){
 
             activos++;
             busesVisibles[id] = true;
+            busesActualizados.push({...b, lat, lng});
             bounds.push([lat,lng]);
 
             const patente = b.patente ?? "Sin patente";
@@ -239,6 +417,9 @@ async function cargar(){
                 delete markers[id];
             }
         }
+
+        busesActivos = busesActualizados;
+        refrescarPopupsParaderos();
 
         document.getElementById("totalBuses").textContent = activos;
 
@@ -307,11 +488,8 @@ async function cargarParaderos(filtro = ""){
             visibles[id] = true;
             total++;
             bounds.push([lat,lng]);
-
-            const popup = `
-                <strong>📍 ${p.nombre ?? "Paradero"}</strong><br>
-                Ruta: ${p.nombre_ruta ?? "Sin ruta"}
-            `;
+            paraderosData[id] = {...p, lat, lng};
+            const popup = crearPopupParadero(paraderosData[id]);
 
             if(paraderoMarkers[id]){
                 paraderoMarkers[id].setLatLng([lat,lng]);
@@ -319,7 +497,8 @@ async function cargarParaderos(filtro = ""){
             }else{
                 paraderoMarkers[id] = L.marker([lat,lng], {icon:paraderoIcon})
                     .addTo(map)
-                    .bindPopup(popup);
+                    .bindPopup(popup)
+                    .on("click", () => seleccionarParadero(id));
             }
         }
 
@@ -327,6 +506,11 @@ async function cargarParaderos(filtro = ""){
             if(!visibles[id]){
                 map.removeLayer(paraderoMarkers[id]);
                 delete paraderoMarkers[id];
+                delete paraderosData[id];
+
+                if(paraderoSeleccionadoId === String(id)){
+                    cerrarLlegada();
+                }
             }
         }
 

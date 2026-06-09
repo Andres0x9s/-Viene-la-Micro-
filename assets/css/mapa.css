@@ -289,6 +289,143 @@ select.btn{
     color:#facc15;
 }
 
+.eta-panel{
+    position:absolute;
+    top:116px;
+    right:22px;
+    z-index:46;
+    width:330px;
+    color:white;
+    background:rgba(2,6,23,.82);
+    border:1px solid rgba(37,244,255,.22);
+    border-radius:24px;
+    padding:19px;
+    backdrop-filter:blur(18px);
+    box-shadow:0 20px 60px rgba(0,0,0,.42);
+    opacity:0;
+    transform:translateY(10px);
+    pointer-events:none;
+    transition:.22s ease;
+}
+
+.eta-panel.show{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+}
+
+.eta-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:34px;
+    height:34px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:50%;
+    color:white;
+    background:rgba(255,255,255,.07);
+    cursor:pointer;
+}
+
+.eta-label{
+    display:block;
+    color:var(--cyan);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    padding-right:38px;
+}
+
+.eta-panel h2{
+    margin:8px 38px 10px 0;
+    font-size:20px;
+    line-height:1.2;
+}
+
+.eta-panel p{
+    margin:0;
+    color:#cbd5e1;
+    font-size:13px;
+    line-height:1.6;
+}
+
+.eta-time{
+    color:white;
+    font-size:42px;
+    line-height:1;
+    font-weight:900;
+    margin:10px 0 14px;
+}
+
+.eta-detail{
+    display:grid;
+    gap:9px;
+}
+
+.eta-detail span{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    color:#cbd5e1;
+    font-size:13px;
+    font-weight:700;
+}
+
+.eta-detail i{
+    width:18px;
+    color:var(--cyan);
+}
+
+.paradero-popup{
+    display:grid;
+    gap:8px;
+    min-width:210px;
+}
+
+.paradero-popup strong{
+    display:block;
+    font-size:14px;
+}
+
+.paradero-popup span{
+    display:block;
+    color:#cbd5e1;
+    font-size:12px;
+}
+
+.eta-mini{
+    padding:9px 10px;
+    border-radius:12px;
+    background:rgba(37,244,255,.08);
+    border:1px solid rgba(37,244,255,.18);
+}
+
+.eta-mini strong{
+    color:#67e8f9;
+    font-size:15px;
+}
+
+.eta-empty{
+    color:#fde68a;
+    font-size:12px;
+    line-height:1.45;
+}
+
+.popup-eta-btn{
+    width:100%;
+    min-height:36px;
+    border:none;
+    border-radius:999px;
+    color:#020617;
+    background:linear-gradient(135deg,var(--cyan),var(--cyan2));
+    font-family:inherit;
+    font-weight:900;
+    cursor:pointer;
+}
+
 .bus-mini-card{
     min-width:230px;
     background:rgba(2,6,23,.84);
@@ -436,6 +573,20 @@ select.btn{
         right:12px;
         bottom:104px;
         max-width:none;
+    }
+
+    .eta-panel{
+        top:auto;
+        left:12px;
+        right:12px;
+        bottom:138px;
+        width:auto;
+        padding:16px;
+        border-radius:20px;
+    }
+
+    .eta-time{
+        font-size:34px;
     }
 
     .bus-mini-card{
