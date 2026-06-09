@@ -1,11 +1,11 @@
 <?php
 
-$server = "ANDRESASUS\SQLEXPRESS";
+$server = "database-pepa.cc3wbiv3rviq.us-east-1.rds.amazonaws.com,1433";
 
 $connectionInfo = array(
     "Database" => "emprendedoresdb",
-    "UID" => "sa",
-    "PWD" => "12345",
+    "UID" => "admin",
+    "PWD" => "12345678",
     "TrustServerCertificate" => true,
     "CharacterSet" => "UTF-8"
 );
