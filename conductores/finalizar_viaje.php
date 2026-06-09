@@ -18,6 +18,15 @@ function h($value)
     return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
 }
 
+function largoTexto($value)
+{
+    if (function_exists("mb_strlen")) {
+        return mb_strlen($value, "UTF-8");
+    }
+
+    return strlen($value);
+}
+
 function distanciaKm($lat1, $lon1, $lat2, $lon2)
 {
     $radioTierraKm = 6371;
@@ -37,7 +46,7 @@ function distanciaKm($lat1, $lon1, $lat2, $lon2)
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $observacion = trim($_POST["observacion"] ?? "");
 
-    if (mb_strlen($observacion, "UTF-8") > 500) {
+    if (largoTexto($observacion) > 500) {
         $error = "La observación no puede superar los 500 caracteres.";
     } else {
         $sqlPuntos = "SELECT lat, lng
@@ -106,7 +115,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit;
         }
 
+        $detalleSql = sqlsrv_errors();
         $error = "No se pudo finalizar el viaje. Intenta nuevamente.";
+
+        if (!empty($detalleSql[0]["message"])) {
+            $error .= " Detalle: " . $detalleSql[0]["message"];
+        }
     }
 }
 ?>
