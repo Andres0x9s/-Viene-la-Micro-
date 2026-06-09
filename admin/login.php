@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (isset($_SESSION["admin"]) && isset($_SESSION["id_ruta"])) {
+if (isset($_SESSION["admin"]) && (isset($_SESSION["id_ruta"]) || ($_SESSION["admin_rol"] ?? "") === "super")) {
     header("Location: dashboard.php");
     exit;
 }

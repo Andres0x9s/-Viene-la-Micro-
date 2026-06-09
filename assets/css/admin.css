@@ -309,6 +309,14 @@ textarea{
     grid-template-columns:repeat(4, minmax(0, 1fr)) auto auto;
 }
 
+.admin-user-form{
+    grid-template-columns:1.2fr 1.2fr 1.4fr auto;
+}
+
+.admin-route-form{
+    grid-template-columns:1.3fr 1fr 1fr auto;
+}
+
 .horario-form,
 .horario-row{
     grid-template-columns:1fr 150px 1fr 1.4fr auto;
@@ -328,6 +336,38 @@ textarea{
 
 .read-row{
     grid-template-columns:1.5fr 1fr 1fr 140px;
+}
+
+.admin-row.admin-user-row{
+    grid-template-columns:1.3fr 110px 1.4fr 120px;
+}
+
+.admin-row.route-admin-row{
+    grid-template-columns:1.3fr 1.4fr;
+}
+
+.admin-management-grid{
+    align-items:start;
+}
+
+.role-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    color:#bfdbfe;
+    background:rgba(59,130,246,.12);
+    border:1px solid rgba(59,130,246,.25);
+    font-size:12px;
+    font-weight:900;
+}
+
+.role-pill.super{
+    color:#fde68a;
+    background:rgba(250,204,21,.12);
+    border-color:rgba(250,204,21,.28);
 }
 
 .viajes-row{
@@ -599,6 +639,10 @@ progress::-moz-progress-bar{
     .search-form,
     .filters-form,
     .admin-row,
+    .admin-route-form,
+    .admin-user-form,
+    .admin-user-row,
+    .route-admin-row,
     .conductor-row,
     .horario-form,
     .horario-row,
@@ -643,6 +687,10 @@ progress::-moz-progress-bar{
     .search-form,
     .filters-form,
     .admin-row,
+    .admin-route-form,
+    .admin-user-form,
+    .admin-user-row,
+    .route-admin-row,
     .conductor-row,
     .horario-form,
     .horario-row,

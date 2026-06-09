@@ -3,13 +3,17 @@ include("auth.php");
 include("../conexion.php");
 include("../helpers/passwords.php");
 
-$idRuta = (int) $_SESSION["id_ruta"];
+$adminRol = $_SESSION["admin_rol"] ?? "ruta";
+$esSuperAdmin = $adminRol === "super";
+$idRuta = (int) ($_SESSION["id_ruta"] ?? 0);
 $adminUsuario = $_SESSION["admin"] ?? "Administrador";
-$section = $_GET["section"] ?? "resumen";
-$validSections = ["resumen", "buses", "conductores", "horarios", "paraderos", "viajes", "online", "detalle_viaje"];
+$section = $_GET["section"] ?? ($esSuperAdmin ? "administradores" : "resumen");
+$validSections = $esSuperAdmin
+    ? ["administradores"]
+    : ["resumen", "buses", "conductores", "horarios", "paraderos", "viajes", "online", "detalle_viaje"];
 
 if (!in_array($section, $validSections, true)) {
-    $section = "resumen";
+    $section = $esSuperAdmin ? "administradores" : "resumen";
 }
 
 function h($value)
@@ -105,8 +109,107 @@ function validCoordinate($value, $min, $max)
     return $number >= $min && $number <= $max;
 }
 
+$rolColumnStmt = sqlsrv_query($conn, "SELECT COL_LENGTH('administradores', 'rol') AS existe_rol");
+$rolColumnRow = $rolColumnStmt ? sqlsrv_fetch_array($rolColumnStmt, SQLSRV_FETCH_ASSOC) : null;
+$tieneRolAdmin = !empty($rolColumnRow["existe_rol"]);
+
+if (!$tieneRolAdmin) {
+    sqlsrv_query($conn, "ALTER TABLE administradores ADD rol VARCHAR(20) NOT NULL CONSTRAINT DF_administradores_rol DEFAULT 'ruta'");
+    $rolColumnStmt = sqlsrv_query($conn, "SELECT COL_LENGTH('administradores', 'rol') AS existe_rol");
+    $rolColumnRow = $rolColumnStmt ? sqlsrv_fetch_array($rolColumnStmt, SQLSRV_FETCH_ASSOC) : null;
+    $tieneRolAdmin = !empty($rolColumnRow["existe_rol"]);
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $action = $_POST["action"] ?? "";
+
+    if (in_array($action, ["create_route", "create_admin"], true) && !$esSuperAdmin) {
+        flash("error", "Solo el administrador principal puede crear rutas y administradores.");
+        redirectSection("resumen");
+    }
+
+    if ($esSuperAdmin && !in_array($action, ["create_route", "create_admin"], true)) {
+        flash("error", "El administrador principal solo gestiona rutas y administradores.");
+        redirectSection("administradores");
+    }
+
+    if ($action === "create_route") {
+        $nombreRuta = trim($_POST["nombre_ruta"] ?? "");
+        $inicio = trim($_POST["inicio"] ?? "");
+        $fin = trim($_POST["fin"] ?? "");
+
+        if ($nombreRuta === "" || $inicio === "" || $fin === "") {
+            flash("error", "Debes ingresar nombre, inicio y fin para crear la ruta.");
+            redirectSection("administradores");
+        }
+
+        $rutaExiste = firstValue(
+            $conn,
+            "SELECT COUNT(*) FROM rutas WHERE nombre_ruta = ? OR (inicio = ? AND fin = ?)",
+            [$nombreRuta, $inicio, $fin]
+        );
+
+        if ((int) $rutaExiste > 0) {
+            flash("error", "Ya existe una ruta con ese nombre o con el mismo inicio y fin.");
+            redirectSection("administradores");
+        }
+
+        $stmt = sqlsrv_query(
+            $conn,
+            "INSERT INTO rutas (nombre_ruta, inicio, fin) VALUES (?, ?, ?)",
+            [$nombreRuta, $inicio, $fin]
+        );
+
+        flash($stmt ? "success" : "error", $stmt ? "Ruta creada correctamente. Ahora puedes asignarle un administrador." : "No se pudo crear la ruta.");
+        redirectSection("administradores");
+    }
+
+    if ($action === "create_admin") {
+        $usuario = trim($_POST["usuario"] ?? "");
+        $password = trim($_POST["password"] ?? "");
+        $idRutaAdmin = (int) ($_POST["id_ruta"] ?? 0);
+
+        if ($usuario === "" || $password === "" || $idRutaAdmin <= 0) {
+            flash("error", "Debes ingresar usuario, contraseña y ruta para crear un administrador.");
+            redirectSection("administradores");
+        }
+
+        if (strlen($password) < 6) {
+            flash("error", "La contraseña del administrador debe tener al menos 6 caracteres.");
+            redirectSection("administradores");
+        }
+
+        $rutaExiste = firstValue($conn, "SELECT COUNT(*) FROM rutas WHERE id_ruta = ?", [$idRutaAdmin]);
+
+        if ((int) $rutaExiste === 0) {
+            flash("error", "La ruta seleccionada no existe.");
+            redirectSection("administradores");
+        }
+
+        $adminExiste = firstValue($conn, "SELECT COUNT(*) FROM administradores WHERE usuario = ?", [$usuario]);
+
+        if ((int) $adminExiste > 0) {
+            flash("error", "Ya existe un administrador con ese usuario.");
+            redirectSection("administradores");
+        }
+
+        if ($tieneRolAdmin) {
+            $stmt = sqlsrv_query(
+                $conn,
+                "INSERT INTO administradores (usuario, password, id_ruta, rol) VALUES (?, ?, ?, 'ruta')",
+                [$usuario, hashUserPassword($password), $idRutaAdmin]
+            );
+        } else {
+            $stmt = sqlsrv_query(
+                $conn,
+                "INSERT INTO administradores (usuario, password, id_ruta) VALUES (?, ?, ?)",
+                [$usuario, hashUserPassword($password), $idRutaAdmin]
+            );
+        }
+
+        flash($stmt ? "success" : "error", $stmt ? "Administrador creado correctamente." : "No se pudo crear el administrador.");
+        redirectSection("administradores");
+    }
 
     if ($action === "create_bus") {
         $patente = normalizePatente($_POST["patente"] ?? "");
@@ -421,6 +524,20 @@ unset($_SESSION["admin_flash"]);
 
 $rutaStmt = sqlsrv_query($conn, "SELECT nombre_ruta, inicio, fin FROM rutas WHERE id_ruta = ?", [$idRuta]);
 $ruta = $rutaStmt ? (sqlsrv_fetch_array($rutaStmt, SQLSRV_FETCH_ASSOC) ?: []) : [];
+$rutasAdmin = fetchRows(sqlsrv_query($conn, "SELECT id_ruta, nombre_ruta, inicio, fin FROM rutas ORDER BY nombre_ruta"));
+$rolAdminSelect = $tieneRolAdmin ? "a.rol" : "'ruta' AS rol";
+$administradores = fetchRows(sqlsrv_query(
+    $conn,
+    "SELECT
+        a.id_admin,
+        a.usuario,
+        a.id_ruta,
+        {$rolAdminSelect},
+        r.nombre_ruta
+     FROM administradores a
+     LEFT JOIN rutas r ON a.id_ruta = r.id_ruta
+     ORDER BY a.usuario"
+));
 
 $buscarBus = trim($_GET["buscar_bus"] ?? "");
 $buscarConductor = trim($_GET["buscar_conductor"] ?? "");
@@ -674,13 +791,17 @@ if ($section === "detalle_viaje") {
     </a>
 
     <nav>
-        <a class="<?= $section === "resumen" ? "active" : "" ?>" href="dashboard.php?section=resumen"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
-        <a class="<?= $section === "buses" ? "active" : "" ?>" href="dashboard.php?section=buses"><i class="fa-solid fa-bus"></i> Buses</a>
-        <a class="<?= $section === "conductores" ? "active" : "" ?>" href="dashboard.php?section=conductores"><i class="fa-solid fa-id-card"></i> Conductores</a>
-        <a class="<?= $section === "horarios" ? "active" : "" ?>" href="dashboard.php?section=horarios"><i class="fa-solid fa-clock"></i> Horarios</a>
-        <a class="<?= $section === "paraderos" ? "active" : "" ?>" href="dashboard.php?section=paraderos"><i class="fa-solid fa-location-dot"></i> Paraderos</a>
-        <a class="<?= $section === "viajes" || $section === "detalle_viaje" ? "active" : "" ?>" href="dashboard.php?section=viajes"><i class="fa-solid fa-route"></i> Viajes</a>
-        <a class="<?= $section === "online" ? "active" : "" ?>" href="dashboard.php?section=online"><i class="fa-solid fa-satellite-dish"></i> Online</a>
+        <?php if ($esSuperAdmin): ?>
+            <a class="<?= $section === "administradores" ? "active" : "" ?>" href="dashboard.php?section=administradores"><i class="fa-solid fa-user-shield"></i> Administradores</a>
+        <?php else: ?>
+            <a class="<?= $section === "resumen" ? "active" : "" ?>" href="dashboard.php?section=resumen"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a class="<?= $section === "buses" ? "active" : "" ?>" href="dashboard.php?section=buses"><i class="fa-solid fa-bus"></i> Buses</a>
+            <a class="<?= $section === "conductores" ? "active" : "" ?>" href="dashboard.php?section=conductores"><i class="fa-solid fa-id-card"></i> Conductores</a>
+            <a class="<?= $section === "horarios" ? "active" : "" ?>" href="dashboard.php?section=horarios"><i class="fa-solid fa-clock"></i> Horarios</a>
+            <a class="<?= $section === "paraderos" ? "active" : "" ?>" href="dashboard.php?section=paraderos"><i class="fa-solid fa-location-dot"></i> Paraderos</a>
+            <a class="<?= $section === "viajes" || $section === "detalle_viaje" ? "active" : "" ?>" href="dashboard.php?section=viajes"><i class="fa-solid fa-route"></i> Viajes</a>
+            <a class="<?= $section === "online" ? "active" : "" ?>" href="dashboard.php?section=online"><i class="fa-solid fa-satellite-dish"></i> Online</a>
+        <?php endif; ?>
     </nav>
 
     <div class="sidebar-footer">
@@ -693,13 +814,18 @@ if ($section === "detalle_viaje") {
     <header class="admin-topbar">
         <div>
             <span class="eyebrow">Panel administrador</span>
-            <h1><?= h($ruta["nombre_ruta"] ?? "Ruta asignada") ?></h1>
-            <p><?= h($ruta["inicio"] ?? "") ?> <?= !empty($ruta) ? "→" : "" ?> <?= h($ruta["fin"] ?? "") ?></p>
+            <?php if ($esSuperAdmin): ?>
+                <h1>Panel principal</h1>
+                <p>Gestión de rutas y administradores del sistema.</p>
+            <?php else: ?>
+                <h1><?= h($ruta["nombre_ruta"] ?? "Ruta asignada") ?></h1>
+                <p><?= h($ruta["inicio"] ?? "") ?> <?= !empty($ruta) ? "→" : "" ?> <?= h($ruta["fin"] ?? "") ?></p>
+            <?php endif; ?>
         </div>
 
         <div class="admin-user">
             <span><?= h($adminUsuario) ?></span>
-            <small>Ruta #<?= h($idRuta) ?></small>
+            <small><?= $esSuperAdmin ? "Admin principal" : "Ruta #" . h($idRuta) ?></small>
         </div>
     </header>
 
@@ -789,6 +915,101 @@ if ($section === "detalle_viaje") {
                     <p class="empty">Aún no hay viajes registrados para esta ruta.</p>
                 <?php endif; ?>
             </div>
+        </section>
+    <?php endif; ?>
+
+    <?php if ($section === "administradores"): ?>
+        <section class="admin-panel">
+            <div class="panel-heading">
+                <div>
+                    <span>Rutas</span>
+                    <h2>Crear ruta nueva</h2>
+                </div>
+            </div>
+
+            <form class="create-form admin-route-form" method="POST">
+                <input type="hidden" name="action" value="create_route">
+                <input name="nombre_ruta" placeholder="Nombre de la ruta" required>
+                <input name="inicio" placeholder="Inicio" required>
+                <input name="fin" placeholder="Fin" required>
+                <button type="submit"><i class="fa-solid fa-route"></i> Crear ruta</button>
+            </form>
+        </section>
+
+        <section class="admin-panel">
+            <div class="panel-heading">
+                <div>
+                    <span>Accesos</span>
+                    <h2>Crear administrador</h2>
+                </div>
+            </div>
+
+            <form class="create-form admin-user-form" method="POST" autocomplete="off">
+                <input type="hidden" name="action" value="create_admin">
+                <input name="usuario" placeholder="Usuario admin" required>
+                <input type="password" name="password" placeholder="Contraseña temporal" minlength="6" required>
+                <select name="id_ruta" required>
+                    <option value="">Ruta asignada</option>
+                    <?php foreach ($rutasAdmin as $rutaAdmin): ?>
+                        <option value="<?= h($rutaAdmin["id_ruta"]) ?>">
+                            <?= h($rutaAdmin["nombre_ruta"]) ?> · <?= h($rutaAdmin["inicio"]) ?> - <?= h($rutaAdmin["fin"]) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit"><i class="fa-solid fa-plus"></i> Crear admin</button>
+            </form>
+        </section>
+
+        <section class="dashboard-grid admin-management-grid">
+            <article class="admin-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span>Disponibles</span>
+                        <h2>Rutas creadas</h2>
+                    </div>
+                </div>
+
+                <div class="admin-list">
+                    <?php foreach ($rutasAdmin as $rutaItem): ?>
+                        <div class="admin-row read-row route-admin-row">
+                            <div>
+                                <small>#<?= h($rutaItem["id_ruta"]) ?></small>
+                                <strong><?= h($rutaItem["nombre_ruta"]) ?></strong>
+                            </div>
+                            <div><?= h($rutaItem["inicio"]) ?> - <?= h($rutaItem["fin"]) ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if (!$rutasAdmin): ?><p class="empty">No hay rutas registradas.</p><?php endif; ?>
+                </div>
+            </article>
+
+            <article class="admin-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span>Accesos</span>
+                        <h2>Administradores creados</h2>
+                    </div>
+                </div>
+
+                <div class="admin-list">
+                    <?php foreach ($administradores as $adminItem): ?>
+                        <div class="admin-row read-row admin-user-row">
+                            <div>
+                                <small>#<?= h($adminItem["id_admin"]) ?></small>
+                                <strong><?= h($adminItem["usuario"]) ?></strong>
+                            </div>
+                            <div>
+                                <span class="role-pill <?= ($adminItem["rol"] ?? "ruta") === "super" ? "super" : "" ?>">
+                                    <?= ($adminItem["rol"] ?? "ruta") === "super" ? "Principal" : "Ruta" ?>
+                                </span>
+                            </div>
+                            <div><?= h($adminItem["nombre_ruta"] ?? "Ruta sin nombre") ?></div>
+                            <div>Ruta #<?= h($adminItem["id_ruta"]) ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php if (!$administradores): ?><p class="empty">No hay administradores registrados.</p><?php endif; ?>
+                </div>
+            </article>
         </section>
     <?php endif; ?>
 
