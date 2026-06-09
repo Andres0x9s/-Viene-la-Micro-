@@ -94,6 +94,20 @@
       margin:10px 0 16px;
     }
 
+    .next-day-label{
+      display:inline-flex;
+      align-items:center;
+      width:auto;
+      margin:0 0 12px!important;
+      padding:7px 12px;
+      color:#fde68a!important;
+      background:rgba(250,204,21,.1);
+      border:1px solid rgba(250,204,21,.22);
+      border-radius:999px;
+      font-size:12px!important;
+      font-weight:800;
+    }
+
     .empty-message{
       color:#94a3b8;
       font-size:20px;

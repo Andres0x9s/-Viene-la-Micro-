@@ -3,8 +3,8 @@ session_start();
 include("conexion.php");
 
 $adminLogged = isset($_SESSION["admin"]);
-$filtroDireccion = $_GET["direccion"] ?? "";
-$filtroRecorrido = $_GET["recorrido"] ?? "";
+$filtroDireccion = trim($_GET["direccion"] ?? "");
+$filtroRecorrido = trim($_GET["recorrido"] ?? "");
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -172,28 +172,33 @@ $filtroRecorrido = $_GET["recorrido"] ?? "";
           <?php
           date_default_timezone_set("America/Santiago");
 
-          $params = [];
+          $horaActual = date("H:i:s");
+          $params = [$horaActual];
 
           $sqlProximos = "SELECT TOP 6
                               b.patente,
                               b.dueno_linea,
                               r.nombre_ruta,
                               h.direccion,
-                              h.hora_salida
+                              h.hora_salida,
+                              CASE
+                                WHEN CONVERT(TIME, h.hora_salida) >= CAST(? AS TIME) THEN 0
+                                ELSE 1
+                              END AS sale_manana
                           FROM horarios h
                           INNER JOIN buses b ON h.id_bus = b.id_bus
-                          INNER JOIN rutas r ON b.id_ruta = r.id_ruta
-                          WHERE h.hora_salida >= CAST(GETDATE() AS TIME)";
+                          INNER JOIN rutas r ON b.id_ruta = r.id_ruta";
 
           if($filtroDireccion !== ""){
-            $sqlProximos .= " AND h.direccion = ?";
+            $sqlProximos .= " WHERE LTRIM(RTRIM(h.direccion)) = LTRIM(RTRIM(?))";
             $params[] = $filtroDireccion;
           }
 
-          $sqlProximos .= " ORDER BY h.hora_salida";
+          $sqlProximos .= " ORDER BY sale_manana, CONVERT(TIME, h.hora_salida)";
 
           $resultadoProximos = sqlsrv_query($conn, $sqlProximos, $params);
           $hayProximos = false;
+          $errorProximos = null;
 
           if($resultadoProximos){
             while($bus = sqlsrv_fetch_array($resultadoProximos, SQLSRV_FETCH_ASSOC)){
@@ -211,6 +216,10 @@ $filtroRecorrido = $_GET["recorrido"] ?? "";
               <?= $bus["hora_salida"]->format('H:i') ?>
             </div>
 
+            <?php if((int) ($bus["sale_manana"] ?? 0) === 1): ?>
+              <p class="next-day-label">Sale mañana</p>
+            <?php endif; ?>
+
             <p>🚌 Patente: <?= htmlspecialchars($bus["patente"]) ?></p>
             <p>👤 Línea: <?= htmlspecialchars($bus["dueno_linea"]) ?></p>
 
@@ -221,9 +230,19 @@ $filtroRecorrido = $_GET["recorrido"] ?? "";
 
           <?php
             }
+          }else{
+            $errorProximos = sqlsrv_errors();
           }
 
-          if(!$hayProximos){
+          if($errorProximos){
+          ?>
+
+          <div class="empty-message">
+            No se pudieron cargar las próximas salidas. Revisa la consulta de horarios.
+          </div>
+
+          <?php
+          }elseif(!$hayProximos){
           ?>
 
           <div class="empty-message">
